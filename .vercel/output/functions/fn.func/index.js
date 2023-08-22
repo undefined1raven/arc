@@ -80,9 +80,6 @@ function subscribe(store, ...callbacks) {
   const unsub = store.subscribe(...callbacks);
   return unsub.unsubscribe ? () => unsub.unsubscribe() : unsub;
 }
-function null_to_empty(value) {
-  return value == null ? "" : value;
-}
 function set_current_component(component5) {
   current_component = component5;
 }
@@ -148,7 +145,7 @@ function create_ssr_component(fn) {
       return {
         html,
         css: {
-          code: Array.from(result.css).map((css2) => css2.code).join("\n"),
+          code: Array.from(result.css).map((css) => css.code).join("\n"),
           map: null
           // TODO
         },
@@ -176,57 +173,84 @@ var init_ssr = __esm({
 });
 
 // .svelte-kit/output/server/chunks/index.js
-function readable(value, start) {
-  return {
-    subscribe: writable(value, start).subscribe
-  };
+function error(status, body) {
+  if (isNaN(status) || status < 400 || status > 599) {
+    throw new Error(`HTTP error status codes must be between 400 and 599 \u2014 ${status} is invalid`);
+  }
+  return new HttpError(status, body);
 }
-function writable(value, start = noop) {
-  let stop;
-  const subscribers = /* @__PURE__ */ new Set();
-  function set(new_value) {
-    if (safe_not_equal(value, new_value)) {
-      value = new_value;
-      if (stop) {
-        const run_queue = !subscriber_queue.length;
-        for (const subscriber of subscribers) {
-          subscriber[1]();
-          subscriber_queue.push(subscriber, value);
-        }
-        if (run_queue) {
-          for (let i = 0; i < subscriber_queue.length; i += 2) {
-            subscriber_queue[i][0](subscriber_queue[i + 1]);
-          }
-          subscriber_queue.length = 0;
-        }
-      }
-    }
+function json(data, init2) {
+  const body = JSON.stringify(data);
+  const headers = new Headers(init2?.headers);
+  if (!headers.has("content-length")) {
+    headers.set("content-length", encoder.encode(body).byteLength.toString());
   }
-  function update(fn) {
-    set(fn(value));
+  if (!headers.has("content-type")) {
+    headers.set("content-type", "application/json");
   }
-  function subscribe2(run2, invalidate = noop) {
-    const subscriber = [run2, invalidate];
-    subscribers.add(subscriber);
-    if (subscribers.size === 1) {
-      stop = start(set, update) || noop;
-    }
-    run2(value);
-    return () => {
-      subscribers.delete(subscriber);
-      if (subscribers.size === 0 && stop) {
-        stop();
-        stop = null;
-      }
-    };
-  }
-  return { set, update, subscribe: subscribe2 };
+  return new Response(body, {
+    ...init2,
+    headers
+  });
 }
-var subscriber_queue;
+function text(body, init2) {
+  const headers = new Headers(init2?.headers);
+  if (!headers.has("content-length")) {
+    const encoded = encoder.encode(body);
+    headers.set("content-length", encoded.byteLength.toString());
+    return new Response(encoded, {
+      ...init2,
+      headers
+    });
+  }
+  return new Response(body, {
+    ...init2,
+    headers
+  });
+}
+var HttpError, Redirect, ActionFailure, encoder;
 var init_chunks = __esm({
   ".svelte-kit/output/server/chunks/index.js"() {
-    init_ssr();
-    subscriber_queue = [];
+    HttpError = class {
+      /**
+       * @param {number} status
+       * @param {{message: string} extends App.Error ? (App.Error | string | undefined) : App.Error} body
+       */
+      constructor(status, body) {
+        this.status = status;
+        if (typeof body === "string") {
+          this.body = { message: body };
+        } else if (body) {
+          this.body = body;
+        } else {
+          this.body = { message: `Error: ${status}` };
+        }
+      }
+      toString() {
+        return JSON.stringify(this.body);
+      }
+    };
+    Redirect = class {
+      /**
+       * @param {300 | 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308} status
+       * @param {string} location
+       */
+      constructor(status, location) {
+        this.status = status;
+        this.location = location;
+      }
+    };
+    ActionFailure = class {
+      /**
+       * @param {number} status
+       * @param {T} [data]
+       */
+      constructor(status, data) {
+        this.status = status;
+        this.data = data;
+      }
+    };
+    encoder = new TextEncoder();
   }
 });
 
@@ -540,6 +564,18 @@ var require_set_cookie = __commonJS({
   }
 });
 
+// .svelte-kit/output/server/entries/pages/_layout.ts.js
+var layout_ts_exports = {};
+__export(layout_ts_exports, {
+  ssr: () => ssr
+});
+var ssr;
+var init_layout_ts = __esm({
+  ".svelte-kit/output/server/entries/pages/_layout.ts.js"() {
+    ssr = false;
+  }
+});
+
 // .svelte-kit/output/server/entries/fallbacks/layout.svelte.js
 var layout_svelte_exports = {};
 __export(layout_svelte_exports, {
@@ -562,14 +598,18 @@ __export(__exports, {
   fonts: () => fonts,
   imports: () => imports,
   index: () => index,
-  stylesheets: () => stylesheets
+  stylesheets: () => stylesheets,
+  universal: () => layout_ts_exports,
+  universal_id: () => universal_id
 });
-var index, component_cache, component, imports, stylesheets, fonts;
+var index, component_cache, component, universal_id, imports, stylesheets, fonts;
 var init__ = __esm({
   ".svelte-kit/output/server/nodes/0.js"() {
+    init_layout_ts();
     index = 0;
     component = async () => component_cache ?? (component_cache = (await Promise.resolve().then(() => (init_layout_svelte(), layout_svelte_exports))).default);
-    imports = ["_app/immutable/nodes/0.e26692fd.js", "_app/immutable/chunks/scheduler.4342e115.js", "_app/immutable/chunks/index.79de4c8c.js"];
+    universal_id = "src/routes/+layout.ts";
+    imports = ["_app/immutable/nodes/0.71b44ea9.js", "_app/immutable/chunks/scheduler.e108d1fd.js", "_app/immutable/chunks/index.77302298.js"];
     stylesheets = [];
     fonts = [];
   }
@@ -628,7 +668,7 @@ var init__2 = __esm({
   ".svelte-kit/output/server/nodes/1.js"() {
     index2 = 1;
     component2 = async () => component_cache2 ?? (component_cache2 = (await Promise.resolve().then(() => (init_error_svelte(), error_svelte_exports))).default);
-    imports2 = ["_app/immutable/nodes/1.36c97c8c.js", "_app/immutable/chunks/scheduler.4342e115.js", "_app/immutable/chunks/index.79de4c8c.js", "_app/immutable/chunks/singletons.d455a578.js", "_app/immutable/chunks/index.790afe26.js"];
+    imports2 = ["_app/immutable/nodes/1.d3989140.js", "_app/immutable/chunks/scheduler.e108d1fd.js", "_app/immutable/chunks/index.77302298.js", "_app/immutable/chunks/singletons.9723d75f.js"];
     stylesheets2 = [];
     fonts2 = [];
   }
@@ -663,7 +703,7 @@ var init__3 = __esm({
   ".svelte-kit/output/server/nodes/2.js"() {
     index3 = 2;
     component3 = async () => component_cache3 ?? (component_cache3 = (await Promise.resolve().then(() => (init_page_svelte(), page_svelte_exports))).default);
-    imports3 = ["_app/immutable/nodes/2.38d6700e.js", "_app/immutable/chunks/scheduler.4342e115.js", "_app/immutable/chunks/index.79de4c8c.js"];
+    imports3 = ["_app/immutable/nodes/2.5e59f313.js", "_app/immutable/chunks/scheduler.e108d1fd.js", "_app/immutable/chunks/index.77302298.js"];
     stylesheets3 = [];
     fonts3 = [];
   }
@@ -674,329 +714,17 @@ var page_svelte_exports2 = {};
 __export(page_svelte_exports2, {
   default: () => Page2
 });
-function isMobile() {
-  if (/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(
-    navigator.userAgent
-  ) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(
-    navigator.userAgent.substr(0, 4)
-  )) {
-    return true;
-  } else {
-    return false;
-  }
-}
-function config() {
-  let styles = {
-    activeColor: "#0038FF",
-    //0038FF
-    secondaryColor: "#0025A8",
-    inactiveColor: "#353535",
-    activeMono: "#FFF",
-    secondaryMono: "#777",
-    inactiveMono: "#353535",
-    borderRadius: "5px",
-    borderRadius20: "20px",
-    borderRadius10: "10px",
-    largeDesktopFont: "27px",
-    veryLargeDesktopFont: "31px",
-    titleDesktopFont: "60px",
-    regularDesktopFont: "25px",
-    smallDesktopFont: "17px",
-    mediumDesktopFont: "21px",
-    footnoteDesktopFont: "12px",
-    veryLargeMobileFont: "31px",
-    largeMobileFont: "19px",
-    regularMobileFont: "16px",
-    smallMobileFont: "10px",
-    footnoteMobileFont: "8px",
-    updateStyle
-  };
-  function updateStyle(key2, value) {
-    if (styles[key2] != void 0 && value != void 0) {
-      styles[key2] = value;
-    }
-  }
-  return styles;
-}
-function getPositionSizeStyles(figmaImport, figmaImportConfig) {
-  function locationSizeOutputCompute(value, ref) {
-    if (value != void 0 && ref != void 0) {
-      return `${parseFloat(value) * 100 / ref}%;`;
-    }
-  }
-  function figmaConfigPropParser(key2, value, ref) {
-    if (value != void 0) {
-      let valueLen = value.toString().length;
-      if (value.toString().substring(valueLen - 1, valueLen) == "%") {
-        return `${key2}: ${value};`;
-      }
-      if (parseFloat(value) != NaN) {
-        let outputValue = locationSizeOutputCompute(parseFloat(value), ref);
-        return `${key2}: ${outputValue}`;
-      }
-    } else {
-      return `${key2}: auto;`;
-    }
-  }
-  function figmaImportDynamicValueGetter(key2) {
-    let desktopConfig = figmaImport["desktop"];
-    let mobileConfig = figmaImport["mobile"];
-    if (isMobile()) {
-      if (mobileConfig) {
-        if (mobileConfig[key2] != void 0) {
-          return mobileConfig[key2];
-        } else {
-          if (desktopConfig) {
-            if (desktopConfig[key2]) {
-              return desktopConfig[key2];
-            } else {
-              return void 0;
-            }
-          } else {
-            return void 0;
-          }
-        }
-      } else {
-        if (desktopConfig) {
-          if (desktopConfig[key2]) {
-            return desktopConfig[key2];
-          } else {
-            return void 0;
-          }
-        } else {
-          return void 0;
-        }
-      }
-    } else {
-      if (desktopConfig != void 0) {
-        if (desktopConfig[key2]) {
-          return desktopConfig[key2];
-        } else {
-          return void 0;
-        }
-      } else {
-        return void 0;
-      }
-    }
-  }
-  let output = "";
-  output += figmaConfigPropParser(
-    "width",
-    figmaImportDynamicValueGetter("width"),
-    figmaImportConfig.containerWidth
-  );
-  output += figmaConfigPropParser(
-    "left",
-    figmaImportDynamicValueGetter("left"),
-    figmaImportConfig.containerWidth
-  );
-  output += figmaConfigPropParser(
-    "height",
-    figmaImportDynamicValueGetter("height"),
-    figmaImportConfig.containerHeight
-  );
-  output += figmaConfigPropParser(
-    "top",
-    figmaImportDynamicValueGetter("top"),
-    figmaImportConfig.containerHeight
-  );
-  return output;
-}
-function getFigmaImportConfig() {
-  return {
-    containerWidth: isMobile() ? 360 : 1920,
-    containerHeight: isMobile() ? 640 : 1080
-  };
-}
-function readTransitions(transitions) {
-  let out = {
-    inFunc: transitions.in ? transitions.in.func : () => {
-    },
-    inOptions: transitions.in ? transitions.in.options : null,
-    outFunc: transitions.out ? transitions.out.func : () => {
-    },
-    outOptions: transitions.out ? transitions.out.options : null
-  };
-  return out;
-}
-function iu(val, valDefault) {
-  return val != void 0 ? val : valDefault;
-}
-var root, displaySize, isMinimizedThreshold, css, Label, globalStyle, Page2;
+var Page2;
 var init_page_svelte2 = __esm({
   ".svelte-kit/output/server/entries/pages/login/_page.svelte.js"() {
     init_ssr();
-    init_chunks();
-    root = document.documentElement;
-    displaySize = { width: window.screen.width, height: window.screen.height };
-    isMinimizedThreshold = 54 / 100 * displaySize.width;
-    writable({ width: root.clientWidth, height: root.clientHeight, minimized: root.clientWidth < isMinimizedThreshold });
-    css = {
-      code: ".label.svelte-fraot9{user-select:none;--webkit-user-select:none;position:absolute;display:flex;align-items:center;justify-content:center;top:0%;text-align:center;transition:color linear 0.1s}",
-      map: null
-    };
-    Label = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-      let lglobalStyles = config();
-      let { id } = $$props;
-      let rendered = false;
-      let { text: text2 } = $$props;
-      let { className } = $$props;
-      let { color = lglobalStyles.activeMono } = $$props;
-      let { style = "" } = $$props;
-      let { borderColor } = $$props;
-      let { backgroundColor } = $$props;
-      let { onClick } = $$props;
-      let { onTouchStart } = $$props;
-      let { onTouchEnd } = $$props;
-      let { width } = $$props;
-      let { height } = $$props;
-      let { top } = $$props;
-      let { tabletTop } = $$props;
-      let { tabletLeft } = $$props;
-      let { left } = $$props;
-      let { horizontalFont } = $$props;
-      let { verticalFont = lglobalStyles.regularMobileFont } = $$props;
-      let { opacity } = $$props;
-      let { backdropFilter } = $$props;
-      let { borderRadius } = $$props;
-      let { show = true } = $$props;
-      let { tabletWidth } = $$props;
-      let { desktopFont = lglobalStyles.regularDesktopFont } = $$props;
-      let { horizontalCenter = false } = $$props;
-      let { verticalCenter = false } = $$props;
-      let { fontType = "rigid" } = $$props;
-      let { transitions = {} } = $$props;
-      let { slotClassName = "" } = $$props;
-      let { figmaImportConfig = { ...getFigmaImportConfig() } } = $$props;
-      let { figmaImport = {} } = $$props;
-      const root2 = document.documentElement;
-      let fontSize = "2.4vh";
-      let clientWidth = root2.clientWidth;
-      let clientHeight = root2.clientHeight;
-      readTransitions(transitions);
-      function positionParser(mobilePosition, tabletPosition) {
-        if (clientWidth > 1023 && tabletPosition != "auto") {
-          return tabletPosition;
-        } else {
-          return mobilePosition;
-        }
-      }
-      if ($$props.id === void 0 && $$bindings.id && id !== void 0)
-        $$bindings.id(id);
-      if ($$props.text === void 0 && $$bindings.text && text2 !== void 0)
-        $$bindings.text(text2);
-      if ($$props.className === void 0 && $$bindings.className && className !== void 0)
-        $$bindings.className(className);
-      if ($$props.color === void 0 && $$bindings.color && color !== void 0)
-        $$bindings.color(color);
-      if ($$props.style === void 0 && $$bindings.style && style !== void 0)
-        $$bindings.style(style);
-      if ($$props.borderColor === void 0 && $$bindings.borderColor && borderColor !== void 0)
-        $$bindings.borderColor(borderColor);
-      if ($$props.backgroundColor === void 0 && $$bindings.backgroundColor && backgroundColor !== void 0)
-        $$bindings.backgroundColor(backgroundColor);
-      if ($$props.onClick === void 0 && $$bindings.onClick && onClick !== void 0)
-        $$bindings.onClick(onClick);
-      if ($$props.onTouchStart === void 0 && $$bindings.onTouchStart && onTouchStart !== void 0)
-        $$bindings.onTouchStart(onTouchStart);
-      if ($$props.onTouchEnd === void 0 && $$bindings.onTouchEnd && onTouchEnd !== void 0)
-        $$bindings.onTouchEnd(onTouchEnd);
-      if ($$props.width === void 0 && $$bindings.width && width !== void 0)
-        $$bindings.width(width);
-      if ($$props.height === void 0 && $$bindings.height && height !== void 0)
-        $$bindings.height(height);
-      if ($$props.top === void 0 && $$bindings.top && top !== void 0)
-        $$bindings.top(top);
-      if ($$props.tabletTop === void 0 && $$bindings.tabletTop && tabletTop !== void 0)
-        $$bindings.tabletTop(tabletTop);
-      if ($$props.tabletLeft === void 0 && $$bindings.tabletLeft && tabletLeft !== void 0)
-        $$bindings.tabletLeft(tabletLeft);
-      if ($$props.left === void 0 && $$bindings.left && left !== void 0)
-        $$bindings.left(left);
-      if ($$props.horizontalFont === void 0 && $$bindings.horizontalFont && horizontalFont !== void 0)
-        $$bindings.horizontalFont(horizontalFont);
-      if ($$props.verticalFont === void 0 && $$bindings.verticalFont && verticalFont !== void 0)
-        $$bindings.verticalFont(verticalFont);
-      if ($$props.opacity === void 0 && $$bindings.opacity && opacity !== void 0)
-        $$bindings.opacity(opacity);
-      if ($$props.backdropFilter === void 0 && $$bindings.backdropFilter && backdropFilter !== void 0)
-        $$bindings.backdropFilter(backdropFilter);
-      if ($$props.borderRadius === void 0 && $$bindings.borderRadius && borderRadius !== void 0)
-        $$bindings.borderRadius(borderRadius);
-      if ($$props.show === void 0 && $$bindings.show && show !== void 0)
-        $$bindings.show(show);
-      if ($$props.tabletWidth === void 0 && $$bindings.tabletWidth && tabletWidth !== void 0)
-        $$bindings.tabletWidth(tabletWidth);
-      if ($$props.desktopFont === void 0 && $$bindings.desktopFont && desktopFont !== void 0)
-        $$bindings.desktopFont(desktopFont);
-      if ($$props.horizontalCenter === void 0 && $$bindings.horizontalCenter && horizontalCenter !== void 0)
-        $$bindings.horizontalCenter(horizontalCenter);
-      if ($$props.verticalCenter === void 0 && $$bindings.verticalCenter && verticalCenter !== void 0)
-        $$bindings.verticalCenter(verticalCenter);
-      if ($$props.fontType === void 0 && $$bindings.fontType && fontType !== void 0)
-        $$bindings.fontType(fontType);
-      if ($$props.transitions === void 0 && $$bindings.transitions && transitions !== void 0)
-        $$bindings.transitions(transitions);
-      if ($$props.slotClassName === void 0 && $$bindings.slotClassName && slotClassName !== void 0)
-        $$bindings.slotClassName(slotClassName);
-      if ($$props.figmaImportConfig === void 0 && $$bindings.figmaImportConfig && figmaImportConfig !== void 0)
-        $$bindings.figmaImportConfig(figmaImportConfig);
-      if ($$props.figmaImport === void 0 && $$bindings.figmaImport && figmaImport !== void 0)
-        $$bindings.figmaImport(figmaImport);
-      $$result.css.add(css);
-      return ` ${show && rendered ? `<div${add_attribute("id", id, 0)} class="${escape(null_to_empty(`label ${className ? className : ""}`), true) + " svelte-fraot9"}" style="${"opacity: " + escape(iu(opacity, "1"), true) + "; font-family: " + escape(
-        fontType == "soft" ? "'Raleway', sans-serif;" : "'Electrolize', sans-serif;",
-        true
-      ) + " font-size: " + escape(iu(fontSize, "2vh"), true) + "; left: " + escape(positionParser(iu(left, "auto"), iu(tabletLeft, "auto")), true) + "; top: " + escape(positionParser(iu(top, "auto"), iu(tabletTop, "auto")), true) + "; width: " + escape(positionParser(iu(width, "auto"), iu(tabletWidth, "auto")), true) + "; height: " + escape(iu(height, "auto"), true) + "; color: " + escape(iu(color, "#FFF"), true) + "; " + escape(
-        Object.keys(figmaImport).length > 0 ? getPositionSizeStyles(figmaImport, figmaImportConfig) : "",
-        true
-      ) + " background-color: " + escape(iu(backgroundColor, "#2400FF00"), true) + "; border: solid 1px " + escape(iu(borderColor, "#FFFFFF00"), true) + "; " + escape(
-        horizontalCenter || verticalCenter ? `transform: translateX(${horizontalCenter == true ? "-50%" : "0px"}) translateY(${verticalCenter == true ? "-50%" : "0px"});` : "",
-        true
-      ) + "; border-radius: " + escape(parseFloat(iu(borderRadius, "0px").substring(0, iu(borderRadius, "0px").length - 2)) * 100 / 360 / 100 * clientHeight + "px;", true) + " --webkit-backdrop-filter: " + escape(iu(backdropFilter, "blur(0px)"), true) + "; backdrop-filter: " + escape(iu(backdropFilter, "blur(0px)"), true) + "; " + escape(style, true)}">${escape(text2 ? text2 : "")} ${slots.default ? slots.default({ class: slotClassName }) : ``}</div>` : ``}`;
-    });
-    globalStyle = writable({
-      activeColor: "#2400FF",
-      //0038FF
-      activeLightColor: "#2958FF",
-      secondaryColor: "#0025A8",
-      inactiveColor: "#353535",
-      activeMono: "#BCB1FF",
-      secondaryMono: "#777777",
-      inactiveMono: "#353535",
-      errorColor: "#FF001F",
-      successColor: "#00FFE0",
-      borderRadius: "5px",
-      borderRadius20: "20px",
-      borderRadius10: "10px",
-      largeDesktopFont: "27px",
-      veryLargeDesktopFont: "31px",
-      titleDesktopFont: "60px",
-      regularDesktopFont: "25px",
-      smallDesktopFont: "17px",
-      mediumDesktopFont: "21px",
-      footnoteDesktopFont: "12px",
-      veryLargeMobileFont: "31px",
-      largeMobileFont: "19px",
-      regularMobileFont: "16px",
-      mediumMobileFont: "14px",
-      smallMobileFont: "10px",
-      footnoteMobileFont: "8px",
-      theme: "light"
-    });
     Page2 = create_ssr_component(($$result, $$props, $$bindings, slots) => {
-      let $globalStyle, $$unsubscribe_globalStyle;
-      $$unsubscribe_globalStyle = subscribe(globalStyle, (value) => $globalStyle = value);
-      $$unsubscribe_globalStyle();
-      return `${validate_component(Label, "Label").$$render(
-        $$result,
-        {
-          text: "xx",
-          color: $globalStyle.activeMono
-        },
-        {},
-        {}
-      )}`;
+      let a = 0;
+      let b = 0;
+      let total = 0;
+      return `<input type="number"${add_attribute("value", a, 0)}> +
+  <input type="number"${add_attribute("value", b, 0)}> =
+  ${escape(total)} <button data-svelte-h="svelte-lb7mh7">Calculate</button>`;
     });
   }
 });
@@ -1015,9 +743,45 @@ var init__4 = __esm({
   ".svelte-kit/output/server/nodes/3.js"() {
     index4 = 3;
     component4 = async () => component_cache4 ?? (component_cache4 = (await Promise.resolve().then(() => (init_page_svelte2(), page_svelte_exports2))).default);
-    imports4 = ["_app/immutable/nodes/3.92cfb29c.js", "_app/immutable/chunks/scheduler.4342e115.js", "_app/immutable/chunks/index.79de4c8c.js", "_app/immutable/chunks/index.790afe26.js"];
-    stylesheets4 = ["_app/immutable/assets/3.e6d5e579.css"];
+    imports4 = ["_app/immutable/nodes/3.49815daa.js", "_app/immutable/chunks/scheduler.e108d1fd.js", "_app/immutable/chunks/index.77302298.js"];
+    stylesheets4 = [];
     fonts4 = [];
+  }
+});
+
+// .svelte-kit/output/server/entries/endpoints/api/add/_server.js
+var server_exports = {};
+__export(server_exports, {
+  POST: () => POST
+});
+async function POST({ request }) {
+  const { a, b } = await request.json();
+  return json(a + b);
+}
+var init_server = __esm({
+  ".svelte-kit/output/server/entries/endpoints/api/add/_server.js"() {
+    init_chunks();
+  }
+});
+
+// .svelte-kit/output/server/entries/endpoints/api/login/_server.ts.js
+var server_ts_exports = {};
+__export(server_ts_exports, {
+  GET: () => GET
+});
+function GET({ url }) {
+  const min = Number(url.searchParams.get("min") ?? "0");
+  const max = Number(url.searchParams.get("max") ?? "1");
+  const d = max - min;
+  if (isNaN(d) || d < 0) {
+    throw error(400, "min and max must be numbers, and min must be less than max");
+  }
+  const random = min + Math.random() * d;
+  return new Response(String(random));
+}
+var init_server_ts = __esm({
+  ".svelte-kit/output/server/entries/endpoints/api/login/_server.ts.js"() {
+    init_chunks();
   }
 });
 
@@ -1185,11 +949,14 @@ var options = {
 		<div class="error">
 			<span class="status">` + status + '</span>\n			<div class="message">\n				<h1>' + message + "</h1>\n			</div>\n		</div>\n	</body>\n</html>\n"
   },
-  version_hash: "u0ku54"
+  version_hash: "fq3p8a"
 };
 function get_hooks() {
   return {};
 }
+
+// .svelte-kit/output/server/index.js
+init_chunks();
 
 // node_modules/devalue/src/utils.js
 var escaped = {
@@ -1647,7 +1414,7 @@ function stringify_primitive2(thing) {
 }
 
 // .svelte-kit/output/server/index.js
-init_chunks();
+init_ssr();
 var import_cookie = __toESM(require_cookie(), 1);
 var set_cookie_parser = __toESM(require_set_cookie(), 1);
 var DEV = false;
@@ -1709,45 +1476,6 @@ function is_form_content_type(request) {
     "text/plain"
   );
 }
-var HttpError = class {
-  /**
-   * @param {number} status
-   * @param {{message: string} extends App.Error ? (App.Error | string | undefined) : App.Error} body
-   */
-  constructor(status, body) {
-    this.status = status;
-    if (typeof body === "string") {
-      this.body = { message: body };
-    } else if (body) {
-      this.body = body;
-    } else {
-      this.body = { message: `Error: ${status}` };
-    }
-  }
-  toString() {
-    return JSON.stringify(this.body);
-  }
-};
-var Redirect = class {
-  /**
-   * @param {300 | 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308} status
-   * @param {string} location
-   */
-  constructor(status, location) {
-    this.status = status;
-    this.location = location;
-  }
-};
-var ActionFailure = class {
-  /**
-   * @param {number} status
-   * @param {T} [data]
-   */
-  constructor(status, data) {
-    this.status = status;
-    this.data = data;
-  }
-};
 function exec(match, params, matchers) {
   const result = {};
   const values = match.slice(1);
@@ -1782,42 +1510,6 @@ function exec(match, params, matchers) {
   if (buffered)
     return;
   return result;
-}
-function error(status, body) {
-  if (isNaN(status) || status < 400 || status > 599) {
-    throw new Error(`HTTP error status codes must be between 400 and 599 \u2014 ${status} is invalid`);
-  }
-  return new HttpError(status, body);
-}
-function json(data, init2) {
-  const body = JSON.stringify(data);
-  const headers = new Headers(init2?.headers);
-  if (!headers.has("content-length")) {
-    headers.set("content-length", encoder$3.encode(body).byteLength.toString());
-  }
-  if (!headers.has("content-type")) {
-    headers.set("content-type", "application/json");
-  }
-  return new Response(body, {
-    ...init2,
-    headers
-  });
-}
-var encoder$3 = new TextEncoder();
-function text(body, init2) {
-  const headers = new Headers(init2?.headers);
-  if (!headers.has("content-length")) {
-    const encoded = encoder$3.encode(body);
-    headers.set("content-length", encoded.byteLength.toString());
-    return new Response(encoded, {
-      ...init2,
-      headers
-    });
-  }
-  return new Response(body, {
-    ...init2,
-    headers
-  });
 }
 function coalesce_to_error(err) {
   return err instanceof Error || err && /** @type {any} */
@@ -2466,6 +2158,53 @@ async function stream_to_string(stream) {
     result += decoder.decode(value);
   }
   return result;
+}
+var subscriber_queue = [];
+function readable(value, start) {
+  return {
+    subscribe: writable(value, start).subscribe
+  };
+}
+function writable(value, start = noop) {
+  let stop;
+  const subscribers = /* @__PURE__ */ new Set();
+  function set(new_value) {
+    if (safe_not_equal(value, new_value)) {
+      value = new_value;
+      if (stop) {
+        const run_queue = !subscriber_queue.length;
+        for (const subscriber of subscribers) {
+          subscriber[1]();
+          subscriber_queue.push(subscriber, value);
+        }
+        if (run_queue) {
+          for (let i = 0; i < subscriber_queue.length; i += 2) {
+            subscriber_queue[i][0](subscriber_queue[i + 1]);
+          }
+          subscriber_queue.length = 0;
+        }
+      }
+    }
+  }
+  function update(fn) {
+    set(fn(value));
+  }
+  function subscribe2(run2, invalidate = noop) {
+    const subscriber = [run2, invalidate];
+    subscribers.add(subscriber);
+    if (subscribers.size === 1) {
+      stop = start(set, update) || noop;
+    }
+    run2(value);
+    return () => {
+      subscribers.delete(subscriber);
+      if (subscribers.size === 0 && stop) {
+        stop();
+        stop = null;
+      }
+    };
+  }
+  return { set, update, subscribe: subscribe2 };
 }
 function hash(...values) {
   let hash2 = 5381;
@@ -3299,9 +3038,9 @@ async function respond_with_error({
   try {
     const branch = [];
     const default_layout = await manifest2._.nodes[0]();
-    const ssr = get_option([default_layout], "ssr") ?? true;
+    const ssr2 = get_option([default_layout], "ssr") ?? true;
     const csr = get_option([default_layout], "csr") ?? true;
-    if (ssr) {
+    if (ssr2) {
       state.error = true;
       const server_data_promise = load_server_data({
         event,
@@ -3340,7 +3079,7 @@ async function respond_with_error({
       manifest: manifest2,
       state,
       page_config: {
-        ssr,
+        ssr: ssr2,
         csr: get_option([default_layout], "csr") ?? true
       },
       status,
@@ -3371,7 +3110,7 @@ function once(fn) {
     return result = fn();
   };
 }
-var encoder = new TextEncoder();
+var encoder2 = new TextEncoder();
 async function render_data(event, route, options2, manifest2, state, invalidated_data_nodes, trailing_slash) {
   if (!route.page) {
     return new Response(void 0, {
@@ -3459,9 +3198,9 @@ async function render_data(event, route, options2, manifest2, state, invalidated
     return new Response(
       new ReadableStream({
         async start(controller) {
-          controller.enqueue(encoder.encode(data));
+          controller.enqueue(encoder2.encode(data));
           for await (const chunk of chunks) {
-            controller.enqueue(encoder.encode(chunk));
+            controller.enqueue(encoder2.encode(chunk));
           }
           controller.close();
         },
@@ -3895,8 +3634,8 @@ function get_cookies(request, url, trailing_slash) {
         continue;
       if (!path_matches(destination.pathname, cookie.options.path))
         continue;
-      const encoder2 = cookie.options.encode || encodeURIComponent;
-      combined_cookies[cookie.name] = encoder2(cookie.value);
+      const encoder22 = cookie.options.encode || encodeURIComponent;
+      combined_cookies[cookie.name] = encoder22(cookie.value);
     }
     if (header2) {
       const parsed = (0, import_cookie.parse)(header2, { decode: (value) => value });
@@ -4527,7 +4266,7 @@ var manifest = (() => {
     assets: /* @__PURE__ */ new Set(["favicon.png", "icon.png", "manifest.json", "service-worker.js"]),
     mimeTypes: { ".png": "image/png", ".json": "application/json" },
     _: {
-      client: { "start": "_app/immutable/entry/start.f616cce8.js", "app": "_app/immutable/entry/app.089bb2b6.js", "imports": ["_app/immutable/entry/start.f616cce8.js", "_app/immutable/chunks/scheduler.4342e115.js", "_app/immutable/chunks/singletons.d455a578.js", "_app/immutable/chunks/index.790afe26.js", "_app/immutable/entry/app.089bb2b6.js", "_app/immutable/chunks/scheduler.4342e115.js", "_app/immutable/chunks/index.79de4c8c.js"], "stylesheets": [], "fonts": [] },
+      client: { "start": "_app/immutable/entry/start.9bf17741.js", "app": "_app/immutable/entry/app.dc1c0fc7.js", "imports": ["_app/immutable/entry/start.9bf17741.js", "_app/immutable/chunks/scheduler.e108d1fd.js", "_app/immutable/chunks/singletons.9723d75f.js", "_app/immutable/entry/app.dc1c0fc7.js", "_app/immutable/chunks/scheduler.e108d1fd.js", "_app/immutable/chunks/index.77302298.js"], "stylesheets": [], "fonts": [] },
       nodes: [
         __memo(() => Promise.resolve().then(() => (init__(), __exports))),
         __memo(() => Promise.resolve().then(() => (init__2(), __exports2))),
@@ -4541,6 +4280,20 @@ var manifest = (() => {
           params: [],
           page: { layouts: [0], errors: [1], leaf: 2 },
           endpoint: null
+        },
+        {
+          id: "/api/add",
+          pattern: /^\/api\/add\/?$/,
+          params: [],
+          page: null,
+          endpoint: __memo(() => Promise.resolve().then(() => (init_server(), server_exports)))
+        },
+        {
+          id: "/api/login",
+          pattern: /^\/api\/login\/?$/,
+          params: [],
+          page: null,
+          endpoint: __memo(() => Promise.resolve().then(() => (init_server_ts(), server_ts_exports)))
         },
         {
           id: "/login",
