@@ -1,2 +1,18 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script lang="ts">
+	import Box from '../components/common/Box.svelte';
+	import Label from '../components/common/Label.svelte';
+	import Button from '../components/common/Button.svelte';
+	import HorizontalLine from '../components/common/HorizontalLine.svelte';
+	import globalStyle from '../stores/globalStyles';
+	import HomeMain from '../components/Home/HomeMain.svelte';
+	import { onDestroy } from 'svelte';
+
+	let renderedComponent = new HomeMain({
+		intro: true,
+		target: document.documentElement
+	});
+
+	onDestroy(() => {
+		renderedComponent.$$destroy();
+	});
+</script>
