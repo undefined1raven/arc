@@ -16,3 +16,4 @@
 		renderedComponent.$$destroy();
 	});
 </script>
+ 
