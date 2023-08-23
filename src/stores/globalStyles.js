@@ -9,7 +9,7 @@ let globalStyle = writable({
     secondaryMono: '#777777',
     inactiveMono: '#353535',
     errorColor: '#FF001F',
-    successColor: '#00FFE0',
+    successColor: '#00FF75',
     borderRadius: '5px',
     borderRadius20: '20px',
     borderRadius10: '10px',
