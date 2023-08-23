@@ -6,6 +6,12 @@
 	import globalStyle from '../../stores/globalStyles';
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
+	import { onMount } from 'svelte';
+	import getNewKey from '../../fn/crypto/getNewKey';
+	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
+	import encrypt from '../../fn/crypto/encrypt';
+	import decrypt from '../../fn/crypto/decrypt';
+	import bcryptjs from 'bcryptjs';
 
 	const weekData = [
 		{ day: 'Sun', status: 'success', routine: true, tasks: true },
@@ -23,6 +29,30 @@
 		pending: $globalStyle.activeColor,
 		upcoming: $globalStyle.secondaryMono
 	};
+
+	onMount(() => {
+		getNewKey().then((key) => {
+			console.log(key);
+			encrypt('hello', key).then((encrypted) => {
+				console.log(encrypted);
+				const cipher = encrypted.cipher;
+				const iv = encrypted.iv;
+				exportCryptoKey(key).then((exportedKey) => {
+					console.log(exportedKey);
+					bcryptjs.hash(JSON.stringify(exportedKey), 10, (err, hash) => {
+						console.log(hash);
+					});
+
+					importPrivateKey(JSON.parse(exportedKey)).then((importedKey) => {
+						console.log(importedKey);
+						decrypt(cipher, iv, importedKey).then((decrypted) => {
+							console.log(decrypted);
+						});
+					});
+				});
+			});
+		});
+	});
 
 	function getRoutineTagColor(dayObj) {
 		if (dayObj !== undefined) {
@@ -66,7 +96,7 @@
 		/>
 	</Box>
 	<Box
-		figmaImport={{ mobile: { top: 25, height: 322, width: 330, left: '50%' } }}
+		figmaImport={{ mobile: { top: 32, height: 322, width: 330, left: '50%' } }}
 		horizontalCenter={true}
 	>
 		<ul class="weekList">
@@ -126,6 +156,21 @@
 			{/each}
 		</ul></Box
 	>
+	<Box
+		figmaImport={{ mobile: { top: 355, left: '50%', width: 330, height: 170 } }}
+		horizontalCenter={true}
+		backgroundColor="{$globalStyle.activeColor}10"
+	/>
+	<Box
+		figmaImport={{ mobile: { top: 533, left: '50%', width: 330, height: 40 } }}
+		horizontalCenter={true}
+		backgroundColor="{$globalStyle.activeColor}10"
+	/>
+	<Box
+		figmaImport={{ mobile: { top: 582, left: '50%', width: 330, height: 44 } }}
+		horizontalCenter={true}
+		backgroundColor="{$globalStyle.activeColor}10"
+	/>
 </root>
 
 <style>
