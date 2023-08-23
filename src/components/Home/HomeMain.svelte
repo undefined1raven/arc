@@ -96,7 +96,7 @@
 						/>
 						<Label
 							color={colorHash[dayObj.status]}
-							width="20%"
+							width="24%"
 							height="100%"
 							top="0%"
 							style="right: 2%;"
