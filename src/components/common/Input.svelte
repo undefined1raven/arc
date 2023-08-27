@@ -225,5 +225,7 @@
 		background: transparent;
 		transition: all linear 0.1s;
 		overflow: scroll;
+		margin: 0;
+		padding: 0;
 	}
 </style>

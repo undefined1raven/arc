@@ -8,12 +8,10 @@
 	import { onDestroy } from 'svelte';
 
 	let renderedComponent = new HomeMain({
-		intro: true,
-		target: document.documentElement
+		target: document.body
 	});
 
 	onDestroy(() => {
 		renderedComponent.$$destroy();
 	});
 </script>
-  
