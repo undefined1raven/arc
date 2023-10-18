@@ -7,7 +7,6 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
 	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
 	import encrypt from '../../fn/crypto/encrypt';
 	import decrypt from '../../fn/crypto/decrypt';
@@ -21,6 +20,9 @@
 	} from '../../stores/dayViewSelectedDay';
 	import MenuBar from '../MenuBar.svelte';
 	import VerticalLine from '../common/VerticalLine.svelte';
+	import { download } from '../../fn/download';
+	import domainGetter from '../../fn/domainGetter';
+	import { get } from 'svelte/store';
 </script>
 
 <Box
@@ -28,6 +30,16 @@
 	figmaImport={{ mobile: { top: 39, width: 350, left: '50%', height: 50 } }}
 	horizontalCenter={true}
 	><Button
+		onClick={() => {
+			download(
+				`arc_key_B${Date.now().toString().substring(5, 10)}.txt`,
+				JSON.stringify({
+					pk: localStorage.getItem('privateKey'),
+					simkey: localStorage.getItem('simkey'),
+					id: localStorage.getItem('accountID')
+				})
+			);
+		}}
 		label="Download Key"
 		width="100%"
 		height="100%"
@@ -79,6 +91,13 @@
 	figmaImport={{ mobile: { top: 522, width: 350, left: '50%', height: 50 } }}
 	horizontalCenter={true}
 	><Button
+		onClick={() => {
+			localStorage.removeItem('privateKey');
+			localStorage.removeItem('accountID');
+			localStorage.removeItem('simkey');
+			localStorage.removeItem('at');
+			window.location.href = '/login';
+		}}
 		label="Log Out"
 		width="100%"
 		height="100%"

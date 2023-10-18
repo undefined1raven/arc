@@ -7,47 +7,250 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
-	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
-	import encrypt from '../../fn/crypto/encrypt';
+	import {
+		ab2str,
+		exportCryptoKey,
+		importPrivateKey,
+		importSymmetricKey,
+		str2ab
+	} from '../../fn/crypto/keyOps';
 	import decrypt from '../../fn/crypto/decrypt';
-	import bcryptjs from 'bcryptjs';
-	import { fly } from 'svelte/transition';
+	import { fade, fly } from 'svelte/transition';
 	import windowHash from '../../stores/windowHash';
 	import HomeActual from './HomeActual.svelte';
 	import DayViewMain from '../DayView/DayViewMain.svelte';
 	import LogsMain from '../Logs/LogsMain.svelte';
 	import EditMain from '../Edit/EditMain.svelte';
-	import { dayViewSelectedDay } from '../../stores/dayViewSelectedDay';
+	import {
+		categories,
+		dayViewSelectedDay,
+		days,
+		tasks,
+		tasksLog
+	} from '../../stores/dayViewSelectedDay';
 	import { currentActivity } from '../../stores/currentActivity';
 	import SettingsMain from '../Settings/SettingsMain.svelte';
+	import { keyHash } from '../../stores/keyHash';
+	import domainGetter from '../../fn/domainGetter';
+	import { allowUpdates } from '../../stores/ini';
+	import { updateLabel } from '../../stores/updateLabel';
+	import SyncingDeco from '../deco/SyncingDeco.svelte';
+	import symmetricDecrypt from '../../fn/crypto/symmetricDecrypt';
+	import StatsMain from '../Stats/StatsMain.svelte';
+	import { isOnline } from '../../stores/online';
+	import NetworkIndicator from './NetworkIndicator.svelte';
+	import { touchEnd, touchStart, touchMove } from '../../stores/touchGestures';
 
 	let rendered = false;
 
-	const validPaths = ['#home', '#dayView', '#logs', '#edit', '#settings'];
+	const validPaths = ['#home', '#dayView', '#logs', '#edit', '#settings', '#stats'];
 
 	const hashToComponent = {
 		'#home': HomeActual,
 		'#dayView': DayViewMain,
 		'#logs': LogsMain,
 		'#edit': EditMain,
-		'#settings': SettingsMain
+		'#settings': SettingsMain,
+		'#stats': StatsMain
 	};
 
 	onMount(() => {
-		window.location.hash = 'home';
-		rendered = true;
-		let cachedCurrentActivity = localStorage.getItem('currentActivity');
+		if (localStorage.getItem('privateKey') === null || localStorage.getItem('simkey') === null) {
+			window.location.href = '/login';
+		} else {
+			window.location.hash = 'home';
+			rendered = true;
+			importSymmetricKey(JSON.parse(localStorage.getItem('simkey')))
+				.then((key) => {
+					if (localStorage.getItem('accountID') === null) {
+						window.location.href = '/login';
+					}
+					fetch(domainGetter('/account/latest'), {
+						method: 'POST',
+						body: JSON.stringify({
+							accountID: localStorage.getItem('accountID'),
+							at: localStorage.getItem('at')
+						}),
+						credentials: 'include'
+					}).then((res) => {
+						res
+							.json()
+							.then(async (responseData) => {
+								isOnline.set(1);
+								if (responseData.id === 'ATX-810') {
+									window.location.href = '/login';
+								}
+								if (responseData.error === undefined) {
+									////////////DO NOT FORGET TO UNDO
+									const encrypted = responseData.encrypted;
+									if (responseData.encrypted === null) {
+										window.location.href = '/login';
+									}
+									localStorage.setItem('publicKey', responseData.encrypted.publicKey);
+									await symmetricDecrypt(
+										encrypted.categories.cipher,
+										key,
+										encrypted.categories.iv
+									).then((decrypted) => {
+										JSON.parse(decrypted);
+										try {
+											const decryptedCategories = JSON.parse(decrypted);
+											categories.set(decryptedCategories);
+										} catch (e) {
+											console.log(e);
+										}
+									});
+									await symmetricDecrypt(encrypted.tasks.cipher, key, encrypted.tasks.iv).then(
+										(decrypted) => {
+											try {
+												const decryptedTasks = JSON.parse(decrypted);
+												tasks.set(decryptedTasks);
+											} catch (e) {
+												console.log(e);
+											}
+										}
+									);
+									await symmetricDecrypt(
+										encrypted.tasksLog.cipher,
+										key,
+										encrypted.tasksLog.iv
+									).then((decrypted) => {
+										try {
+											const decryptedTasksLog = JSON.parse(decrypted);
+											tasksLog.set(decryptedTasksLog);
+										} catch (e) {
+											console.log(e);
+										}
+									});
+									await symmetricDecrypt(encrypted.days.cipher, key, encrypted.days.iv).then(
+										(decrypted) => {
+											try {
+												const decryptedDays = JSON.parse(decrypted);
+												days.set(decryptedDays);
+											} catch (e) {
+												console.log(e);
+											}
+										}
+									);
 
-		if (cachedCurrentActivity !== null) {
-			currentActivity.set(JSON.parse(cachedCurrentActivity));
+									setInterval(() => {
+										if (Date.now() - $days[$days.length - 1].dayEndUnix >= 86400000) {
+											let lowerBoundUnix =
+												new Date($days[$days.length - 1].dayEndUnix).setHours(23, 59, 59, 59) +
+												1000;
+											let upperBoundUnix = lowerBoundUnix + 86400000;
+
+											const prevDaysTasks = [];
+											for (let ix = $tasksLog.length - 1; ix >= 0; ix--) {
+												const task = $tasksLog[ix];
+												if (
+													task.taskStartUnix > lowerBoundUnix &&
+													task.taskStartUnix < upperBoundUnix
+												) {
+													prevDaysTasks.push(task);
+												} else {
+													break;
+												}
+											}
+
+											let dayObj = {};
+											//get day coverage
+											let trackedTime = 0;
+											for (let ix = 0; ix < prevDaysTasks.length; ix++) {
+												const task = prevDaysTasks[ix];
+												trackedTime += task.taskEndUnix - task.taskStartUnix;
+											}
+											let dayCoverage = ((trackedTime / 86400000) * 100).toFixed(0) + '%';
+
+											dayObj['coverage'] = dayCoverage;
+											dayObj['dayStartUnix'] = lowerBoundUnix;
+											dayObj['dayEndUnix'] = upperBoundUnix - 100;
+
+											//get day state [just routine based so far]
+											const routineTasks = $tasks.filter((task) => task.isRoutine);
+											if (routineTasks.length === 0) {
+												dayObj['routine'] = true;
+												dayObj['status'] = 'success';
+											} else {
+												let routineTasksCompleted = 0;
+												for (let ix = 0; ix < routineTasks.length; ix++) {
+													const task = routineTasks[ix];
+													const taskLog = prevDaysTasks.filter(
+														(prevTask) => prevTask.taskID === task.id
+													)[0];
+													if (taskLog && task) {
+														let scheduledStartUnix = new Date(lowerBoundUnix).setHours(
+															task.expectedStart[0],
+															task.expectedStart[1],
+															task.expectedStart[3],
+															task.expectedStart[4]
+														);
+														let scheduledEndUnix = new Date(lowerBoundUnix).setHours(
+															task.expectedEnd[0],
+															task.expectedEnd[1],
+															task.expectedEnd[3],
+															task.expectedEnd[4]
+														);
+														let startedOnTime = false;
+														let endedOnTime = false;
+														let acceptableOffset = 1000 * 60 * 20;
+														if (
+															Math.abs(scheduledStartUnix - taskLog.taskStartUnix) <
+															acceptableOffset
+														) {
+															startedOnTime = true;
+														}
+														if (
+															Math.abs(scheduledEndUnix - taskLog.taskEndUnix) < acceptableOffset
+														) {
+															endedOnTime = true;
+														}
+														if (startedOnTime && endedOnTime) {
+															routineTasksCompleted++;
+														}
+													}
+												}
+												if (routineTasksCompleted === routineTasks.length) {
+													dayObj['routine'] = true;
+													dayObj['status'] = 'success';
+												} else {
+													dayObj['routine'] = false;
+													dayObj['status'] = 'fail';
+												}
+											}
+											days.update((days) => {
+												days.push(dayObj);
+												return days;
+											});
+										}
+									}, 1000);
+
+									allowUpdates.set(true);
+									updateLabel.set('none');
+								}
+							})
+							.catch((e) => {
+								console.log(e);
+								isOnline.set(-2);
+							});
+					});
+				})
+				.catch((err) => {
+					isOnline.set(0);
+					console.log(err);
+				});
+
+			let cachedCurrentActivity = localStorage.getItem('currentActivity');
+
+			if (cachedCurrentActivity !== null) {
+				currentActivity.set(JSON.parse(cachedCurrentActivity));
+			}
 		}
 	});
 
 	windowHash.subscribe((wh) => {
 		if (wh === '#dayView' && Object.keys($dayViewSelectedDay).length === 0) {
-			console.log(Object.keys($dayViewSelectedDay).length);
-			window.location.hash = 'home';
+			// window.location.hash = 'home';
 		}
 		if (validPaths.indexOf(wh) === -1) {
 			window.location.hash = 'home';
@@ -57,22 +260,17 @@
 
 <root>
 	{#if rendered}
-		<Box
-			transitions={{
-				in: { func: fly, options: { duration: 400, y: '-2%' } }
-			}}
-			figmaImport={{ mobile: { top: '0%', height: 19, width: '100%', left: '0%' } }}
-		>
-			<Logo top="10%" width="100%" height="90%" left="0%" color={$globalStyle.activeColor} />
-			<HorizontalLine
-				top="110%"
-				style="background: radial-gradient(50% 50.00% at 50% 50.00%, #2400FF 0%, rgba(36, 0, 255, 0.10) 100%);"
-				width="100%"
-				height="10%"
-				left="0%"
-				color={$globalStyle.activeColor}
-			/>
-		</Box>
 		<svelte:component this={hashToComponent[$windowHash]} />
+		{#if $updateLabel === '[Syncing]'}
+			<Box
+				width="100%"
+				height="95%"
+				top="5%"
+				backgroundColor="#000000CC"
+				backdropFilter="blur(5px)"
+				style="z-index: 500;"
+				left="0%"><SyncingDeco width="50%" height="50%" color={$globalStyle.activeColor} /></Box
+			>
+		{/if}
 	{/if}
 </root>

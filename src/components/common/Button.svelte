@@ -46,7 +46,10 @@
 	let transitions = {};
 	let figmaImport = {};
 	let toolTipText = '';
+
+	let rendered = false;
 	onMount(() => {
+		rendered = true;
 		fontController();
 	});
 	globalStyle.subscribe((gs) => {
@@ -134,29 +137,32 @@
 </script>
 
 <svelte:window on:resize={onResize} />
-<div
-	{id}
-	on:click={onClick}
-	on:mouseenter={() => {
-		if (toolTipText !== undefined && toolTipText !== '') {
-			toolTipState.set({ text: toolTipText, show: true });
-		}
-		if (mouseEnter !== undefined) {
-			mouseEnter.call();
-		}
-		isMouseHovering = true;
-	}}
-	on:mouseleave={() => {
-		if (toolTipText !== undefined && toolTipText !== '') {
-			toolTipState.set({ text: toolTipText, show: false });
-		}
-		if (mouseLeave !== undefined) {
-			mouseLeave.call();
-		}
-		isMouseHovering = false;
-	}}
-	class={`button ${iu(className, '')}`}
-	style="
+{#if rendered}
+	<div
+		{id}
+		in:inFunc={inOptions}
+		out:outFunc={outOptions}
+		on:click={onClick}
+		on:mouseenter={() => {
+			if (toolTipText !== undefined && toolTipText !== '') {
+				toolTipState.set({ text: toolTipText, show: true });
+			}
+			if (mouseEnter !== undefined) {
+				mouseEnter.call();
+			}
+			isMouseHovering = true;
+		}}
+		on:mouseleave={() => {
+			if (toolTipText !== undefined && toolTipText !== '') {
+				toolTipState.set({ text: toolTipText, show: false });
+			}
+			if (mouseLeave !== undefined) {
+				mouseLeave.call();
+			}
+			isMouseHovering = false;
+		}}
+		class={`button ${iu(className, '')}`}
+		style="
         opacity: {iu(opacity, '1')}; 
         font-size: {iu(fontSize, '2vh')};
         left: {iu(left, 'auto')}; 
@@ -166,32 +172,33 @@
 		{Object.keys(figmaImport).length > 0 ? FigmaImporter(figmaImport, figmaImportConfig) : ''} 
         color: {iu(color, '#FFF')}; 
         background-color: {iu(backgroundColor, '#0500FF')}{isMouseHovering
-		? hoverOpacityMax
-		: hoverOpacityMin}; 
+			? hoverOpacityMax
+			: hoverOpacityMin}; 
 		{horizontalCenter || verticalCenter
-		? `transform: translateX(${horizontalCenter == true ? '-50%' : '0px'}) translateY(${
-				verticalCenter == true ? '-50%' : '0px'
-		  });`
-		: ''};
+			? `transform: translateX(${horizontalCenter == true ? '-50%' : '0px'}) translateY(${
+					verticalCenter == true ? '-50%' : '0px'
+			  });`
+			: ''};
 		font-family: {fontType == 'soft' ? "'Raleway', sans-serif;" : "'Electrolize', sans-serif;"}
 		border: solid 1px {iu(borderColor, '#0500FF')};
         border-radius: {((parseFloat(
-		iu(borderRadius, '0px')
-			.toString()
-			.substring(0, iu(borderRadius, '0px').length - 2)
-	) *
-		100) /
-		360 /
-		100) *
-		clientHeight +
-		'px;'};
+			iu(borderRadius, '0px')
+				.toString()
+				.substring(0, iu(borderRadius, '0px').length - 2)
+		) *
+			100) /
+			360 /
+			100) *
+			clientHeight +
+			'px;'};
         backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
         --webkit-backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
         {iu(style, '')}"
->
-	{label ? label : ''}
-	<slot />
-</div>
+	>
+		{label ? label : ''}
+		<slot />
+	</div>
+{/if}
 
 <style>
 	.button {

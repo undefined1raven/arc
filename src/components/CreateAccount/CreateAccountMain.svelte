@@ -7,8 +7,14 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
-	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
+	import { getNewKey, getNewSymmetricKey } from '../../fn/crypto/getNewKey';
+	import {
+		ab2str,
+		exportCryptoKey,
+		importPrivateKey,
+		importPublicKey,
+		importSymmetricKey
+	} from '../../fn/crypto/keyOps';
 	import encrypt from '../../fn/crypto/encrypt';
 	import decrypt from '../../fn/crypto/decrypt';
 	import bcryptjs from 'bcryptjs';
@@ -16,16 +22,19 @@
 	import { download } from '../../fn/download';
 	import screenSize from '../../stores/screenSize';
 	import domainGetter from '../../fn/domainGetter';
+	import { categories, days, tasks, tasksLog } from '../../stores/dayViewSelectedDay';
+	import symmetricEncrypt from '../../fn/crypto/symmetricEncrypt';
+	import symmetricDecrypt from '../../fn/crypto/symmetricDecrypt';
 	let stage = 'keyGen';
 
-	let keyExport = { key: '', ready: false, hash: '' };
+	let keyExport = { privateKey: '', publicKey: '', ready: false, accountID: '', simkey: '' };
 
 	let actionButtonState = { label: 'Download Key', stage: 'download' };
 
 	const stageToLabelProps = {
-		keyGen: { text: 'Generating Key', color: '#2400FF', backgroundColor: '#2400ff20' },
-		keyExportPrep: { text: 'Prepairing Key', color: '#2400FF', backgroundColor: '#2400ff20' },
-		keyHash: { text: 'Hashing Key', color: '#2400FF', backgroundColor: '#2400ff20' },
+		keyGen: { text: 'Generating Keys', color: '#2400FF', backgroundColor: '#2400ff20' },
+		keyExportPrep: { text: 'Prepairing Keys', color: '#2400FF', backgroundColor: '#2400ff20' },
+		keyHash: { text: 'Hashing Keys', color: '#2400FF', backgroundColor: '#2400ff20' },
 		ready: {
 			text: 'Ready',
 			color: $globalStyle.successColor,
@@ -41,6 +50,11 @@
 			color: $globalStyle.successColor,
 			backgroundColor: $globalStyle.successColor + '10'
 		},
+		encrypting: {
+			text: 'Encrypting',
+			color: '#2400ff',
+			backgroundColor: '#2400ff' + '20'
+		},
 		error: {
 			text: 'Error',
 			color: $globalStyle.errorColor,
@@ -48,55 +62,103 @@
 		}
 	};
 
-	function downloadKey() {
+	async function downloadKey() {
 		if (actionButtonState.stage === 'confirm') {
-			stage = 'sendCreds';
-			fetch(domainGetter('/account/new'), {
-				method: 'POST',
-				body: JSON.stringify({ hash: keyExport.hash })
-			})
-				.then((res) => {
-					res.body
-						.getReader()
-						.read()
-						.then((data) => {
-							const dataString = new TextDecoder('utf-8').decode(data.value);
-							try {
-								const dataObj = JSON.parse(dataString);
-								if (dataObj.success) {
-									stage = 'redirecting';
-									setTimeout(() => {
-										window.location.href = '/';
-									}, 300);
-								} else {
-									stage = 'ready';
-								}
-							} catch (e) {
-								stage = 'error';
-							}
-						});
-				})
-				.catch((e) => {
-					stage = 'error';
+			stage = 'encrypting';
+
+			importSymmetricKey(JSON.parse(keyExport.simkey)).then(async (simkey) => {
+				let uplinkDoc = {};
+
+				await symmetricEncrypt(JSON.stringify($categories), simkey).then((result) => {
+					uplinkDoc['categories'] = { cipher: result.cipher, iv: result.iv };
 				});
+				await symmetricEncrypt(JSON.stringify($tasks), simkey).then((result) => {
+					uplinkDoc['tasks'] = { cipher: result.cipher, iv: result.iv };
+				});
+				await symmetricEncrypt(JSON.stringify($days), simkey).then((result) => {
+					uplinkDoc['days'] = { cipher: result.cipher, iv: result.iv };
+				});
+				await symmetricEncrypt(JSON.stringify($tasksLog), simkey).then((result) => {
+					uplinkDoc['tasksLog'] = { cipher: result.cipher, iv: result.iv };
+				});
+
+				uplinkDoc['accountID'] = keyExport.accountID;
+				uplinkDoc['publicKey'] = keyExport.publicKey;
+
+				stage = 'sendCreds';
+
+				fetch(domainGetter('/account/new'), {
+					method: 'POST',
+					body: JSON.stringify(uplinkDoc),
+					credentials: 'include'
+				})
+					.then((res) => {
+						res.body
+							.getReader()
+							.read()
+							.then((data) => {
+								const dataString = new TextDecoder('utf-8').decode(data.value);
+								try {
+									const dataObj = JSON.parse(dataString);
+									if (dataObj.success) {
+										localStorage.setItem('at', dataObj.at);
+										stage = 'redirecting';
+										setTimeout(() => {
+											localStorage.setItem('accountID', keyExport.accountID);
+											window.location.href = '/#home';
+										}, 300);
+									} else {
+										stage = 'ready';
+									}
+								} catch (e) {
+									stage = 'error';
+								}
+							});
+					})
+					.catch((e) => {
+						stage = 'error';
+					});
+			});
 		} else {
 			if (keyExport.ready) {
-				download('arc_key.txt', keyExport.key);
+				download(
+					'arc_key.txt',
+					JSON.stringify({
+						pk: keyExport.privateKey,
+						simkey: localStorage.getItem('simkey'),
+						id: keyExport.accountID
+					})
+				);
 				actionButtonState = { label: 'Confirm Download', stage: 'confirm' };
 			}
 		}
 	}
 
-	onMount(() => {
-		getNewKey().then((key) => {
+	onMount(async () => {
+		const simkey = await getNewSymmetricKey();
+		exportCryptoKey(simkey).then((exportedSimkey) => {
+			keyExport.simkey = exportedSimkey;
+			localStorage.setItem('simkey', exportedSimkey);
+		});
+		getNewKey().then((keys) => {
+			const privateKey = keys.privateKey;
+			const publicKey = keys.publicKey;
 			stage = 'keyExportPrep';
-			exportCryptoKey(key).then((exportedKey) => {
-				stage = 'keyHash';
-				console.log('what');
-				localStorage.setItem('key', exportedKey);
-				bcryptjs.hash(JSON.stringify(exportedKey), 10, (err, hash) => {
-					keyExport = { key: exportedKey, ready: true, hash: hash };
-					stage = 'ready';
+			exportCryptoKey(privateKey).then((exportedPrivateKey) => {
+				exportCryptoKey(publicKey).then((exportedPublicKey) => {
+					stage = 'keyHash';
+					localStorage.setItem('privateKey', exportedPrivateKey);
+					bcryptjs.hash(exportedPrivateKey, '$2a$10$2PXi1PwDiA8FoaVOJkk6QO', (err, hash) => {
+						localStorage.setItem('accountID', hash);
+						keyExport = {
+							...keyExport,
+							publicKey: exportedPublicKey,
+							privateKey: exportedPrivateKey,
+							ready: true,
+							accountID: hash
+						};
+						stage = 'ready';
+					});
 				});
 			});
 		});
@@ -153,14 +215,23 @@
 		backgroundColor="{$globalStyle.activeColor}10"
 		{...stageToLabelProps[stage]}
 	/>
-	<Button
-		onClick={() => {
-			downloadKey();
-		}}
-		figmaImport={{ mobile: { top: 459, left: 30, width: 297, height: 44 } }}
-		label={actionButtonState.label}
-		hoverOpacityMin={0}
+	<Label
+		borderRadius="5px"
+		figmaImport={{ mobile: { top: 400, left: 30, width: 297, height: 30 } }}
+		text="ARC_ID [{keyExport.accountID.substring(7, 14).toUpperCase()}]"
+		color={$globalStyle.secondaryMono}
+		verticalFont={$globalStyle.smallMobileFont}
 	/>
+	{#if stage !== 'keyGen'}
+		<Button
+			onClick={() => {
+				downloadKey();
+			}}
+			figmaImport={{ mobile: { top: 459, left: 30, width: 297, height: 44 } }}
+			label={actionButtonState.label}
+			hoverOpacityMin={0}
+		/>
+	{/if}
 </div>
 
 <style>

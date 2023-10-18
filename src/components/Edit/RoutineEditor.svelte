@@ -7,10 +7,6 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
-	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
-	import encrypt from '../../fn/crypto/encrypt';
-	import decrypt from '../../fn/crypto/decrypt';
 	import { fade, fly } from 'svelte/transition';
 	import { categories, dayViewSelectedDay, tasks } from '../../stores/dayViewSelectedDay';
 	import MenuBar from '../MenuBar.svelte';
@@ -42,13 +38,31 @@
 		figmaImport={{ mobile: { top: 78 + topOffset, width: width, height: 400, left: '50%' } }}
 		horizontalCenter={true}
 		><ul class="tasksList">
+			{#if routineTasks.length === 0}
+				<ListItem width="99%" height="8%" style="margin-bottom: 3%; margin-top: 0.5%;">
+					<Box
+						width="100%"
+						height="100%"
+						transitions={{ in: { func: fly, options: { delay: 80, duration: 200, y: '-4%' } } }}
+					>
+						<Label
+							text="No routine tasks"
+							color={$globalStyle.activeMono}
+							width="100%"
+							height="100%"
+							backgroundColor="{$globalStyle.activeColor}20"
+							borderRadius="5px"
+						/>
+					</Box>
+				</ListItem>
+			{/if}
 			{#each routineTasks as routineTask, ix}
 				<ListItem width="99%" height="10%" style="margin-bottom: 3%; margin-top: 0.5%;">
 					<Box
 						width="100%"
 						height="100%"
 						transitions={{
-							in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 						}}
 					>
 						<Button
@@ -69,13 +83,14 @@
 							hoverOpacityMax={20}
 							style="border: solid 1px {$globalStyle.activeColor};"
 							transitions={{
-								in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+								in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 							}}
 						>
 							<Label
-								left="0%"
-								width="20%"
+								left="2%"
+								width="70%"
 								height="100%"
+								style="text-align: start; justify-content: start;"
 								text={routineTask.name}
 								color={$globalStyle.activeMono}
 							/>
@@ -85,18 +100,8 @@
 								verticalFont={$globalStyle.mediumMobileFont}
 								backgroundColor="{$globalStyle.activeColor}20"
 								height="50%"
-								style="right: 30%;"
-								text="{routineTask.expectedStart}-{routineTask.expectedEnd}"
-								borderRadius="3px"
-							/>
-							<Label
-								verticalFont={$globalStyle.mediumMobileFont}
-								width="25%"
-								color={$globalStyle.activeMono}
-								backgroundColor="{$globalStyle.activeColor}20"
-								height="50%"
-								text={$categories.find((elm) => elm.id === routineTask.categoryID).name}
 								style="right: 2%;"
+								text="{routineTask.expectedStart}-{routineTask.expectedEnd}"
 								borderRadius="3px"
 							/>
 						</Button>
@@ -164,7 +169,7 @@
 						width="100%"
 						height="100%"
 						transitions={{
-							in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 						}}
 					>
 						<Button
@@ -179,14 +184,15 @@
 								? $globalStyle.activeColor
 								: $globalStyle.secondaryColor};"
 							transitions={{
-								in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+								in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 							}}
 						>
 							<Label
-								left="0%"
-								width="20%"
+								left="2%"
+								width="70%"
 								height="100%"
 								text={task.name}
+								style="text-align: start; justify-content: start;"
 								color={task.id === selectedTaskForRoutine?.id
 									? $globalStyle.activeMono
 									: $globalStyle.secondaryMono}
@@ -264,26 +270,17 @@
 	>
 		<Button
 			onClick={() => {
-				let numericalStartTimeInput = parseInt(
-					`${parseInt(startTimeInput.split(':')[0])}${parseInt(startTimeInput.split(':')[1])}`
-				);
-				let numericalEndTimeInput = parseInt(
-					`${parseInt(endTimeInput.split(':')[0])}${parseInt(endTimeInput.split(':')[1])}`
-				);
-
-				if (numericalEndTimeInput > numericalStartTimeInput) {
-					tasks.update((tx) => {
-						let ix = tx.indexOf(selectedTaskForRoutine);
-						tx[ix] = {
-							...tx[ix],
-							expectedStart: startTimeInput,
-							expectedEnd: endTimeInput,
-							isRoutine: true
-						};
-						return tx;
-					});
-					editMode = false;
-				}
+				tasks.update((tx) => {
+					let ix = tx.indexOf(selectedTaskForRoutine);
+					tx[ix] = {
+						...tx[ix],
+						expectedStart: startTimeInput,
+						expectedEnd: endTimeInput,
+						isRoutine: true
+					};
+					return tx;
+				});
+				editMode = false;
 			}}
 			width="100%"
 			height="100%"

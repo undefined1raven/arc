@@ -7,11 +7,6 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
-	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
-	import encrypt from '../../fn/crypto/encrypt';
-	import decrypt from '../../fn/crypto/decrypt';
-	import bcryptjs from 'bcryptjs';
 	import { fly } from 'svelte/transition';
 	import MenuBar from '../MenuBar.svelte';
 	import { dayViewSelectedDay, days } from '../../stores/dayViewSelectedDay';
@@ -39,6 +34,7 @@
 		pending: $globalStyle.activeColor,
 		success: $globalStyle.successColor,
 		fail: $globalStyle.errorColor,
+		upcoming: $globalStyle.secondaryMono,
 		true: $globalStyle.successColor,
 		false: $globalStyle.errorColor
 	};
@@ -50,6 +46,16 @@
 		const year = date.getFullYear();
 		return `${dateNumber} ${month} ${year}`;
 	}
+
+	function getRoutineLabelColor(status) {
+		if (status === 'pending') {
+			return $globalStyle.activeColor;
+		} else if (status === 'upcoming') {
+			return $globalStyle.secondaryMono;
+		} else {
+			return colorHash[status];
+		}
+	}
 </script>
 
 <Box
@@ -57,12 +63,30 @@
 	figmaImport={{ mobile: { top: 25 + topOffset, width: width, height: 490, left: '50%' } }}
 	horizontalCenter={true}
 	><ul class="tasksList">
+		{#if $days.length === 0}
+			<ListItem width="99%" height="8%" style="margin-bottom: 3%; margin-top: 0.5%;">
+				<Box
+					width="100%"
+					height="100%"
+					transitions={{ in: { func: fly, options: { delay: 80, duration: 200, y: '-4%' } } }}
+				>
+					<Label
+						text="No logs to display"
+						color={$globalStyle.activeMono}
+						width="100%"
+						height="100%"
+						backgroundColor="{$globalStyle.activeColor}20"
+						borderRadius="5px"
+					/>
+				</Box>
+			</ListItem>
+		{/if}
 		{#each $days as day, ix}
 			<ListItem width="99%" height="8%" style="margin-bottom: 3%; margin-top: 0.5%;">
 				<Box
 					width="100%"
 					height="100%"
-					transitions={{ in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } } }}
+					transitions={{ in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } } }}
 				>
 					<Button
 						onClick={() => {
@@ -75,7 +99,7 @@
 						hoverOpacityMax={20}
 						style="border: solid 1px {colorHash[day.status]};"
 						transitions={{
-							in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 						}}
 					>
 						<Label
@@ -94,10 +118,8 @@
 							height="50%"
 							text="Routine"
 							style="right: 2%;"
-							backgroundColor="{day.status === 'pending'
-								? $globalStyle.activeColor
-								: colorHash[day.routine]}20"
-							color={day.status === 'pending' ? $globalStyle.activeColor : colorHash[day.routine]}
+							backgroundColor="{getRoutineLabelColor(day.status)}20"
+							color={getRoutineLabelColor(day.status)}
 							borderRadius="3px"
 						/>
 					</Button>
@@ -108,9 +130,9 @@
 >
 <Button
 	onClick={() => {
-		// window.location.hash = 'stats';
+		window.location.hash = 'stats';
 	}}
-	label="Global Stats [Coming Soon]"
+	label="Stats"
 	color={$globalStyle.activeMono}
 	borderColor={$globalStyle.activeColor}
 	backgroundColor={$globalStyle.activeColor}

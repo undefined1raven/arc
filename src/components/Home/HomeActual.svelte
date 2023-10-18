@@ -7,11 +7,6 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onDestroy, onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
-	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
-	import encrypt from '../../fn/crypto/encrypt';
-	import decrypt from '../../fn/crypto/decrypt';
-	import bcryptjs from 'bcryptjs';
 	import { fly } from 'svelte/transition';
 	import MenuBar from '../MenuBar.svelte';
 	import {
@@ -24,15 +19,26 @@
 	import { currentActivity } from '../../stores/currentActivity';
 	import timePadding from '../../fn/timePadding';
 	import screenSize from '../../stores/screenSize';
+	import { updateLabel } from '../../stores/updateLabel';
 
-	let weekData = [
-		{ day: 'Sun', status: 'upcoming', routine: true, tasks: true },
-		{ day: 'Mon', status: 'upcoming', routine: true, tasks: true },
-		{ day: 'Tue', status: 'upcoming', routine: true, tasks: true },
-		{ day: 'Wen', status: 'upcoming', routine: true, tasks: true },
-		{ day: 'Thu', status: 'upcoming', routine: true, tasks: true },
-		{ day: 'Fri', status: 'upcoming', routine: true, tasks: true },
-		{ day: 'Sat', status: 'upcoming', routine: true, tasks: true }
+	let weekDataDefault = [
+		{ day: 'Sun', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Mon', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Tue', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Wen', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Thu', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Fri', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Sat', status: 'upcoming', routine: true, tasks: true, ini: false }
+	];
+
+	$: weekData = [
+		{ day: 'Sun', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Mon', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Tue', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Wen', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Thu', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Fri', status: 'upcoming', routine: true, tasks: true, ini: false },
+		{ day: 'Sat', status: 'upcoming', routine: true, tasks: true, ini: false }
 	];
 
 	const dayHash = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wen', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
@@ -43,17 +49,20 @@
 		pending: $globalStyle.activeColor,
 		upcoming: $globalStyle.secondaryMono
 	};
-
+ 
 	let interval500ms;
 
-	onMount(() => {
-		interval500ms = setInterval(() => {
-			setUntrackedTimeLabel();
-			setTrackedTimeLabel();
-		}, 500);
+	function updateWeekData() {
+		weekData = weekDataDefault;
 		const dayOfWeek = new Date().getDay();
 		weekData[dayOfWeek].status = 'pending';
-		let prevWeek = $days.slice($days.length - dayOfWeek, $days.length);
+		let prevWeek;
+		if ($days.length - dayOfWeek < 0) {
+			prevWeek = $days.slice(0, $days.length);
+		} else {
+			prevWeek = $days.slice($days.length - dayOfWeek, $days.length);
+		}
+
 		if (prevWeek.length === dayOfWeek) {
 			for (let ix = 0; ix < prevWeek.length; ix++) {
 				weekData[ix] = {
@@ -65,14 +74,31 @@
 			let dataGapIndexDelta = dayOfWeek - prevWeek.length;
 			for (let ix = 0; ix < weekData.length - 1; ix++) {
 				if (ix >= dataGapIndexDelta) {
-					weekData[ix] = {
-						...prevWeek[ix - dataGapIndexDelta],
-						day: dayHash[new Date(prevWeek[ix - dataGapIndexDelta].dayStartUnix).getDay()]
-					};
+					try {
+						weekData[ix] = {
+							...prevWeek[ix - dataGapIndexDelta],
+							day: dayHash[new Date(prevWeek[ix - dataGapIndexDelta].dayStartUnix).getDay()]
+						};
+					} catch (e) {}
 				}
 			}
 		}
+		for (let ix = 0; ix < weekData.length; ix++) {
+			weekData[ix].ini = true;
+		}
+	}
+
+	updateLabel.subscribe((label) => {
+		updateWeekData();
+	});
+
+	onMount(() => {
 		window.location.hash = 'home';
+		interval500ms = setInterval(() => {
+			setUntrackedTimeLabel();
+			setTrackedTimeLabel();
+		}, 500);
+		updateWeekData();
 	});
 
 	onDestroy(() => {
@@ -155,7 +181,7 @@
 				<Box
 					width="100%"
 					height="100%"
-					transitions={{ in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } } }}
+					transitions={{ in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } } }}
 				>
 					<Button
 						onClick={() => {
@@ -212,7 +238,7 @@
 			options: { delay: 200, duration: 400, y: '-2%' }
 		}
 	}}
-	figmaImport={{ mobile: { top: 355, left: '50%', width: 350, height: 170 } }}
+	figmaImport={{ mobile: { top: 355, left: '50%', width: 350, height: 216 } }}
 	horizontalCenter={true}
 	backgroundColor="{currentActivityDockColors[currentActivityDockStatus]}10"
 >
@@ -230,7 +256,7 @@
 			}}
 			label="Task Picker"
 			width="80%"
-			height="26%"
+			height="20%"
 			hoverOpacityMin={0}
 			hoverOpacityMax={30}
 			color={currentActivityDockColors[currentActivityDockStatus]}
@@ -263,18 +289,6 @@
 			top="40%"
 		/>
 		<Button
-			width="45%"
-			height="22%"
-			label="Pause"
-			color={$globalStyle.secondaryMono}
-			backgroundColor={$globalStyle.secondaryColor}
-			borderColor={$globalStyle.secondaryColor}
-			hoverOpacityMin={0}
-			hoverOpacityMax={20}
-			left="2.5%"
-			top="70%"
-		/>
-		<Button
 			onClick={() => {
 				tasksLog.update((old) => {
 					return [
@@ -289,17 +303,17 @@
 				localStorage.setItem('currentActivity', 'null');
 				currentActivity.set(null);
 			}}
-			width="45%"
+			width="90%"
 			height="22%"
 			label="Done"
 			hoverOpacityMin={0}
 			hoverOpacityMax={20}
-			left="52.5%"
+			left="5%"
 			top="70%"
 		/>
 	{/if}
 </Box>
-<Box
+<!-- <Box
 	transitions={{
 		in: {
 			func: fly,
@@ -313,7 +327,7 @@
 	figmaImport={{ mobile: { top: 533, left: '50%', width: 350, height: 40 } }}
 	horizontalCenter={true}
 	backgroundColor="{$globalStyle.activeColor}10"
-/>
+/> -->
 <MenuBar />
 
 {#if taskPickingMode === true}
@@ -336,7 +350,7 @@
 						width="100%"
 						height="100%"
 						transitions={{
-							in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 						}}
 					>
 						<Button
@@ -349,7 +363,7 @@
 							hoverOpacityMin={0}
 							hoverOpacityMax={20}
 							transitions={{
-								in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+								in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 							}}
 						>
 							<Label
@@ -375,4 +389,18 @@
 			{/each}
 		</ul></Box
 	>
+	<Button
+		onClick={() => {
+			taskPickingMode = false;
+		}}
+		label="Back"
+		color={$globalStyle.secondaryMono}
+		borderColor={$globalStyle.secondaryMono}
+		backgroundColor={$globalStyle.secondaryMono}
+		hoverOpacityMin={0}
+		hoverOpacityMax={20}
+		style="z-index: 52;"
+		figmaImport={{ mobile: { top: 581, left: '50%', width: 350, height: 44 } }}
+		horizontalCenter={true}
+	/>
 {/if}

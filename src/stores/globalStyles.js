@@ -3,7 +3,7 @@ import { writable } from "svelte/store";
 let globalStyle = writable({
     activeColor: '#2400FF',//0038FF
     activeLightColor: '#2958FF',
-    secondaryColor: '#0025A8',
+    secondaryColor: '#100071',
     inactiveColor: '#353535',
     activeMono: '#BCB1FF',
     secondaryMono: '#777777',

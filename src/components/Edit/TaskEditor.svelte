@@ -7,10 +7,6 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
-	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
-	import encrypt from '../../fn/crypto/encrypt';
-	import decrypt from '../../fn/crypto/decrypt';
 	import { fade, fly } from 'svelte/transition';
 	import { categories, dayViewSelectedDay, tasks } from '../../stores/dayViewSelectedDay';
 	import MenuBar from '../MenuBar.svelte';
@@ -52,7 +48,7 @@
 						width="100%"
 						height="100%"
 						transitions={{
-							in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 						}}
 					>
 						<Button
@@ -71,7 +67,7 @@
 							hoverOpacityMax={20}
 							style="border: solid 1px {$globalStyle.activeColor};"
 							transitions={{
-								in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+								in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 							}}
 						>
 							<Label
@@ -181,7 +177,7 @@
 						width="100%"
 						height="100%"
 						transitions={{
-							in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 						}}
 					>
 						<Button
@@ -202,7 +198,7 @@
 								? $globalStyle.activeColor
 								: $globalStyle.secondaryColor};"
 							transitions={{
-								in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+								in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 							}}
 						>
 							<Label
@@ -268,10 +264,8 @@
 						categoryID: newTaskCategoryID,
 						active: true
 					});
-					console.log($tasks);
 					tasksCopy = tasksCopy;
 				}
-				console.log($tasks);
 				editMode = false;
 			}}
 			width="100%"

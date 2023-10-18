@@ -7,10 +7,6 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
-	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
-	import encrypt from '../../fn/crypto/encrypt';
-	import decrypt from '../../fn/crypto/decrypt';
 	import { fly } from 'svelte/transition';
 	import { dayViewSelectedDay } from '../../stores/dayViewSelectedDay';
 	import MenuBar from '../MenuBar.svelte';

@@ -7,10 +7,6 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
-	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
-	import encrypt from '../../fn/crypto/encrypt';
-	import decrypt from '../../fn/crypto/decrypt';
 	import { fly } from 'svelte/transition';
 	import {
 		categories,
@@ -29,6 +25,16 @@
 		true: $globalStyle.successColor,
 		false: $globalStyle.errorColor
 	};
+
+	function getRoutineLabelColor(routine) {
+		if ($dayViewSelectedDay.status === 'pending') {
+			return $globalStyle.activeColor;
+		} else if ($dayViewSelectedDay.status === 'upcoming') {
+			return $globalStyle.secondaryMono;
+		} else {
+			return colorHash[routine];
+		}
+	}
 
 	function getTime(unix) {
 		const date = new Date(parseInt(unix));
@@ -84,15 +90,26 @@
 						(dayTasks[ix].taskEndUnix - dayTasks[ix].taskStartUnix) / 1000 / 60 / 60
 					)}h ${Math.floor(
 						((dayTasks[ix].taskEndUnix - dayTasks[ix].taskStartUnix) / 1000 / 60) % 60
-					)}m`
+					)}m`,
+					percentage: (
+						((dayTasks[ix].taskEndUnix - dayTasks[ix].taskStartUnix) / 86400000) *
+						100
+					).toFixed(1)
 				};
 			} else {
 				categories[dayTasks[ix].category].count++;
+
 				categories[dayTasks[ix].category].time +=
 					dayTasks[ix].taskEndUnix - dayTasks[ix].taskStartUnix;
+
 				categories[dayTasks[ix].category].timeStr = `${Math.floor(
 					categories[dayTasks[ix].category].time / 1000 / 60 / 60
 				)}h ${Math.floor((categories[dayTasks[ix].category].time / 1000 / 60) % 60)}m`;
+
+				categories[dayTasks[ix].category].percentage = (
+					(categories[dayTasks[ix].category].time / 86400000) *
+					100
+				).toFixed(1);
 			}
 		}
 		let keys = Object.keys(categories);
@@ -101,7 +118,8 @@
 			outArray.push({
 				name: keys[ix],
 				count: categories[keys[ix]].count,
-				timeStr: categories[keys[ix]].timeStr
+				timeStr: categories[keys[ix]].timeStr,
+				percentage: categories[keys[ix]].percentage
 			});
 		}
 		return outArray;
@@ -115,13 +133,23 @@
 	figmaImport={{ mobile: { top: 73 + topOffset, width: width, height: 300, left: '50%' } }}
 	horizontalCenter={true}
 	><ul class="tasksList">
+		{#if dayTasks.length === 0}
+			<ListItem width="99%" height="15%" style="margin-bottom: 3%; margin-top: 2%;">
+				<Box
+					width="99%"
+					height="99%"
+					backgroundColor="{$globalStyle.activeColor}20"
+					transitions={{ in: { func: fly, options: { delay: 80, duration: 200, y: '-4%' } } }}
+				/><Label color={$globalStyle.activeMono} text="No task logs to display" /></ListItem
+			>
+		{/if}
 		{#each dayTasks as task, ix}
 			<ListItem width="99%" height="15%" style="margin-bottom: 3%; margin-top: 0.5%;">
 				<Box
 					width="99%"
 					height="99%"
 					style="border: solid 1px {$globalStyle.activeColor};"
-					transitions={{ in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } } }}
+					transitions={{ in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } } }}
 				>
 					<Label
 						left="0%"
@@ -183,8 +211,8 @@
 		height="50%"
 		left="18%"
 		text="Routine"
-		backgroundColor="{colorHash[$dayViewSelectedDay.routine]}20"
-		color={colorHash[$dayViewSelectedDay.routine]}
+		backgroundColor="{getRoutineLabelColor($dayViewSelectedDay.routine)}20"
+		color={getRoutineLabelColor($dayViewSelectedDay.routine)}
 		borderRadius="3px"
 	/>
 </Box>
@@ -194,6 +222,19 @@
 	figmaImport={{ mobile: { top: 384 + topOffset, width: width, height: 185, left: '50%' } }}
 	horizontalCenter={true}
 	><ul class="tasksList">
+		{#if getCategoryStatsArray(dayTasks).length === 0}
+			<ListItem width="99%" height="25%" style="margin-bottom: 3%; margin-top: 2%;">
+				<Box
+					width="99%"
+					height="99%"
+					backgroundColor="{$globalStyle.activeColor}20"
+					transitions={{ in: { func: fly, options: { delay: 80, duration: 200, y: '-4%' } } }}
+				/><Label
+					color={$globalStyle.activeMono}
+					text="No category breakdown to display"
+				/></ListItem
+			>
+		{/if}
 		{#each getCategoryStatsArray(dayTasks) as category, ix}
 			<ListItem width="99%" height="25%" style="margin-bottom: 3%; margin-top: 2%;">
 				<Box
@@ -202,13 +243,21 @@
 					transitions={{ in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } } }}
 				>
 					<Label
-						width="65%"
+						width="71%"
 						height="80%"
 						left="0%"
 						text={category.name}
 						color={$globalStyle.activeMono}
-						style="padding-left: 2%; padding-right: 2%;"
+						style="padding-left: 2%; padding-right: 2%; justify-content: start; text-align: start;"
 						backgroundColor="{$globalStyle.activeColor}20"
+						borderRadius="5px"
+					/>
+					<Label
+						height="80%"
+						verticalFont={$globalStyle.mediumMobileFont}
+						text="[{category.percentage}%]"
+						color={$globalStyle.activeMono}
+						style="right: 30%; padding-left: 2%; padding-right: 2%; justify-content: start; text-align: start;"
 						borderRadius="5px"
 					/>
 					<Label

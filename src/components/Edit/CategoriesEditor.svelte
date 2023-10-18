@@ -7,10 +7,6 @@
 	import Logo from '../deco/Logo.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { onMount } from 'svelte';
-	import getNewKey from '../../fn/crypto/getNewKey';
-	import { exportCryptoKey, importPrivateKey } from '../../fn/crypto/keyOps';
-	import encrypt from '../../fn/crypto/encrypt';
-	import decrypt from '../../fn/crypto/decrypt';
 	import { fade, fly } from 'svelte/transition';
 	import { categories, dayViewSelectedDay, tasks } from '../../stores/dayViewSelectedDay';
 	import MenuBar from '../MenuBar.svelte';
@@ -51,7 +47,7 @@
 					width="100%"
 					height="100%"
 					transitions={{
-						in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+						in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 					}}
 				>
 					<Input
@@ -63,7 +59,7 @@
 						bind:value={category.name}
 						style="padding-left: 1%; border: solid 1px {$globalStyle.activeColor}00;"
 						transitions={{
-							in: { func: fly, options: { delay: 80 * ix, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
 						}}
 					/>
 					<Button
@@ -119,8 +115,8 @@
 					name: newCategoryName,
 					active: true
 				});
-				console.log(categoriesCopy);
 				categoriesCopy = categoriesCopy;
+				newCategoryName = '';
 			}
 		}}
 		width="100%"

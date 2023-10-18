@@ -1,50 +1,135 @@
 import { writable } from "svelte/store";
+import encrypt from "../fn/crypto/encrypt";
+import { importPrivateKey } from "../fn/crypto/keyOps";
+import decrypt from "../fn/crypto/decrypt";
+import getRandomInt from "../fn/getRandomInt";
 
-export let dayViewSelectedDay = writable({});
+export let dayViewSelectedDay = writable({});//not in db - this is dynamically generated depending on what day the user clicks on
 
-export let categories = writable([{ active: true, id: 'null', name: 'None' }, { active: true, id: '0', name: 'A' }, { active: true, id: '1', name: 'B' }, { active: true, id: '2', name: 'C' }, { active: true, id: '3', name: 'D' }]);
-
-export let tasksLog = writable([
-    { taskID: '0', taskStartUnix: new Date('08-23-2023 01:15').getTime(), taskEndUnix: new Date('08-23-2023 10:15').getTime() },
-    { taskID: '1', taskStartUnix: new Date('08-23-2023 08:15').getTime(), taskEndUnix: new Date('08-23-2023 10:15').getTime() },
-    { taskID: '2', taskStartUnix: new Date('08-23-2023 08:15').getTime(), taskEndUnix: new Date('08-23-2023 13:15').getTime() },
-    { taskID: '3', taskStartUnix: new Date('08-23-2023 08:15').getTime(), taskEndUnix: new Date('08-23-2023 14:15').getTime() },
-
-    { taskID: '0', taskStartUnix: new Date('08-24-2023 08:15').getTime(), taskEndUnix: new Date('08-24-2023 09:15').getTime() },
-    { taskID: '0', taskStartUnix: new Date('08-24-2023 10:15').getTime(), taskEndUnix: new Date('08-24-2023 11:15').getTime() },
-    { taskID: '0', taskStartUnix: new Date('08-24-2023 11:15').getTime(), taskEndUnix: new Date('08-24-2023 12:15').getTime() },
-    { taskID: '0', taskStartUnix: new Date('08-24-2023 14:15').getTime(), taskEndUnix: new Date('08-24-2023 15:15').getTime() },
-    { taskID: '1', taskStartUnix: new Date('08-24-2023 16:15').getTime(), taskEndUnix: new Date('08-24-2023 17:15').getTime() },
-    { taskID: '2', taskStartUnix: new Date('08-24-2023 18:15').getTime(), taskEndUnix: new Date('08-24-2023 19:15').getTime() },
-
-    { taskID: '3', taskStartUnix: new Date('08-25-2023 04:18').getTime(), taskEndUnix: new Date('08-25-2023 05:15').getTime() },
-    { taskID: '4', taskStartUnix: new Date('08-25-2023 08:15').getTime(), taskEndUnix: new Date('08-25-2023 10:15').getTime() },
-    { taskID: '5', taskStartUnix: new Date('08-25-2023 14:15').getTime(), taskEndUnix: new Date('08-25-2023 15:15').getTime() },
-    { taskID: '3', taskStartUnix: new Date('08-25-2023 15:30').getTime(), taskEndUnix: new Date('08-25-2023 16:15').getTime() },
-    { taskID: '3', taskStartUnix: new Date('08-25-2023 17:11').getTime(), taskEndUnix: new Date('08-25-2023 18:15').getTime() },
-
-    { taskID: '4', taskStartUnix: new Date('08-26-2023 06:41').getTime(), taskEndUnix: new Date('08-26-2023 06:51').getTime() },
-    { taskID: '5', taskStartUnix: new Date('08-26-2023 09:10').getTime(), taskEndUnix: new Date('08-26-2023 10:51').getTime() },
-    { taskID: '3', taskStartUnix: new Date('08-26-2023 11:00').getTime(), taskEndUnix: new Date('08-26-2023 12:51').getTime() },
-    { taskID: '4', taskStartUnix: new Date('08-26-2023 12:15').getTime(), taskEndUnix: new Date('08-26-2023 15:51').getTime() },
-    { taskID: '4', taskStartUnix: new Date('08-26-2023 12:15').getTime(), taskEndUnix: new Date('08-26-2023 15:51').getTime() },
-    { taskID: '4', taskStartUnix: new Date('08-26-2023 12:15').getTime(), taskEndUnix: new Date('08-26-2023 15:51').getTime() },
-
-    { taskID: '4', taskStartUnix: new Date('08-27-2023 12:15').getTime(), taskEndUnix: new Date('08-27-2023 15:51').getTime() },
-    { taskID: '4', taskStartUnix: new Date('08-27-2023 12:15').getTime(), taskEndUnix: new Date('08-27-2023 15:51').getTime() },
-    { taskID: '5', taskStartUnix: new Date('08-27-2023 01:15').getTime(), taskEndUnix: new Date('08-27-2023 02:00').getTime() }]);
-
+//prod
+export let categories = writable([{ active: true, id: 'null', name: 'None' }, { active: true, id: 'CAT-0', name: 'Workout' }, { active: true, id: 'CAT-1', name: 'Academics' }, { active: true, id: 'CAT-2', name: 'Bio' }]); //, { active: true, id: '3', name: 'Biox' }
 export let tasks = writable([
-    { active: true, id: '0', expectedStart: '14:25', expectedEnd: '14:55', name: 'Tasky1', categoryID: '0' },
-    { active: true, id: '1', name: 'Tasky2', categoryID: '1', isRoutine: true, expectedStart: '14:25', expectedEnd: '14:55' },
-    { active: true, id: '2', name: 'Tasky3', categoryID: '2', isRoutine: false, expectedStart: '14:25', expectedEnd: '14:55' },
-    { active: true, id: '3', name: 'Tasky4', categoryID: '3', isRoutine: true, expectedStart: '14:25', expectedEnd: '14:55' },
-    { active: true, id: '4', name: 'Tasky5', categoryID: '3', isRoutine: false, expectedStart: '14:25', expectedEnd: '14:55' },
-    { active: true, id: '5', name: 'Tasky6', categoryID: '2', isRoutine: false, expectedStart: '14:25', expectedEnd: '14:55' }]);
-
-export let days = writable([
-    { dayStartUnix: new Date('08-23-2023').getTime(), dayEndUnix: new Date('08-24-2023').getTime() - 1, routine: true, status: 'success', coverage: '87%' },
-    { dayStartUnix: new Date('08-24-2023').getTime(), dayEndUnix: new Date('08-25-2023').getTime() - 1, routine: true, status: 'success', coverage: '88%' },
-    { dayStartUnix: new Date('08-25-2023').getTime(), dayEndUnix: new Date('08-26-2023').getTime() - 1, routine: true, status: 'success', coverage: '89%' },
-    { dayStartUnix: new Date('08-26-2023').getTime(), dayEndUnix: new Date('08-27-2023').getTime() - 1, routine: false, status: 'fail', coverage: '89%' },
+    { active: true, id: 'TASK-0', name: 'School/Uni', categoryID: 'CAT-1', isRoutine: false, expectedStart: '12:00', expectedEnd: '17:55' },
+    { active: true, id: 'TASK-1', name: 'Morning Run', categoryID: 'CAT-0', isRoutine: false, expectedStart: '06:00', expectedEnd: '08:00' },
 ]);
+export let tasksLog = writable([]);
+const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+export let days = writable([
+    { status: 'upcoming', routine: true, coverage: '1%', dayStartUnix: new Date(dateStr).getTime() - 86400000, dayEndUnix: new Date(dateStr).getTime() - 1, },
+]);
+
+
+
+//dev
+// export let categories = writable([{ active: true, id: 'null', name: 'None' }, { active: true, id: 'CAT-0', name: 'Workout' }, { active: true, id: 'CAT-1', name: 'Academics' }, { active: true, id: 'CAT-2', name: 'Bio' }, { active: true, id: 'CAT-3', name: 'Biox' }]); //, { active: true, id: '3', name: 'Biox' }
+
+// export let tasks = writable([
+//     { active: true, id: 'TASK-0', name: 'School/Uni', categoryID: 'CAT-0', isRoutine: false, expectedStart: '12:00', expectedEnd: '17:55' },
+//     { active: true, id: 'TASK-1', name: 'Morning Run', categoryID: 'CAT-0', isRoutine: false, expectedStart: '06:00', expectedEnd: '08:00' },
+//     { active: true, id: 'TASK-3', name: 'Morning Rxxun', categoryID: 'CAT-0', isRoutine: false, expectedStart: '06:00', expectedEnd: '08:00' },
+//     { active: true, id: 'TASK-2', name: 'Morndding Rxxun', categoryID: 'CAT-0', isRoutine: false, expectedStart: '06:00', expectedEnd: '08:00' },
+// ]);
+
+
+// export let tasksLog = writable([
+//     { taskID: 'TASK-3', taskStartUnix: new Date('07-04-2023').getTime(), taskEndUnix: new Date('07-04-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('07-04-2023').getTime(), taskEndUnix: new Date('07-04-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('07-04-2023').getTime(), taskEndUnix: new Date('07-04-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('07-04-2023').getTime(), taskEndUnix: new Date('07-04-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('07-04-2023').getTime(), taskEndUnix: new Date('07-04-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-12-2023').getTime(), taskEndUnix: new Date('08-12-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-12-2023').getTime(), taskEndUnix: new Date('08-12-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-12-2023').getTime(), taskEndUnix: new Date('08-12-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-12-2023').getTime(), taskEndUnix: new Date('08-12-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-12-2023').getTime(), taskEndUnix: new Date('08-12-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-12-2023').getTime(), taskEndUnix: new Date('08-12-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-12-2023').getTime(), taskEndUnix: new Date('08-12-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-13-2023').getTime(), taskEndUnix: new Date('08-13-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-13-2023').getTime(), taskEndUnix: new Date('08-13-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-13-2023').getTime(), taskEndUnix: new Date('08-13-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-2', taskStartUnix: new Date('08-13-2023').getTime(), taskEndUnix: new Date('08-13-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-13-2023').getTime(), taskEndUnix: new Date('08-13-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-13-2023').getTime(), taskEndUnix: new Date('08-13-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-13-2023').getTime(), taskEndUnix: new Date('08-13-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-14-2023').getTime(), taskEndUnix: new Date('08-14-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-14-2023').getTime(), taskEndUnix: new Date('08-14-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-2', taskStartUnix: new Date('08-14-2023').getTime(), taskEndUnix: new Date('08-14-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-14-2023').getTime(), taskEndUnix: new Date('08-14-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-2', taskStartUnix: new Date('08-14-2023').getTime(), taskEndUnix: new Date('08-14-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-14-2023').getTime(), taskEndUnix: new Date('08-14-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-14-2023').getTime(), taskEndUnix: new Date('08-14-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-16-2023').getTime(), taskEndUnix: new Date('08-16-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-2', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-2', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-17-2023').getTime(), taskEndUnix: new Date('08-17-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-18-2023').getTime(), taskEndUnix: new Date('08-18-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-3', taskStartUnix: new Date('08-20-2023').getTime(), taskEndUnix: new Date('08-20-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-21-2023').getTime(), taskEndUnix: new Date('08-21-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-0', taskStartUnix: new Date('08-21-2023').getTime(), taskEndUnix: new Date('08-21-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+//     { taskID: 'TASK-1', taskStartUnix: new Date('08-21-2023').getTime(), taskEndUnix: new Date('08-21-2023').getTime() + 1000 * 60 * 60 * getRandomInt(1, 340) },
+
+// ]);
