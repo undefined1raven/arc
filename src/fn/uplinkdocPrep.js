@@ -66,7 +66,6 @@ async function getUplinkDoc(categories, tasks, tasksLog, days, updateCache) {
                         localStorage.setItem('encryptedOfflineCache', JSON.stringify(updatedCache));
                     } catch (e) { }
                 }
-                console.log(uplinkDoc)
                 return { status: true, uplinkDoc: uplinkDoc };
             })
             .catch((e) => {

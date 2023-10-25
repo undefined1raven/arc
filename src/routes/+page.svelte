@@ -57,6 +57,7 @@
 
 	tasksLog.subscribe((tl) => {
 		lastStoreUpdateUnix = Date.now();
+		console.log(tl);
 		sent = false;
 	});
 

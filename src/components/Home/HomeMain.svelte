@@ -79,7 +79,12 @@
 		await symmetricDecrypt(encrypted.tasksLog.cipher, key, encrypted.tasksLog.iv).then(
 			(decrypted) => {
 				try {
-					const decryptedTasksLog = JSON.parse(decrypted);
+					let decryptedTasksLog = JSON.parse(decrypted);
+					if ($tasksLog.length > decryptedTasksLog.length) {
+						for (let ix = $tasksLog.length - decryptedTasksLog.length; ix > 0; ix--) {
+							decryptedTasksLog.push($tasksLog[$tasksLog.length - ix]);
+						}
+					}
 					tasksLog.set(decryptedTasksLog);
 				} catch (e) {
 					console.log(e);
@@ -176,7 +181,6 @@
 			}
 		}, 1000);
 
-		console.log(Date.now());
 		allowUpdates.set(allowUpdatesValue);
 		updateLabel.set('none');
 	}
