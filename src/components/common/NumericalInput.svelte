@@ -2,23 +2,22 @@
 	import { onMount } from 'svelte';
 	import isMobile from '../../fn/isMobile.ts';
 	import { RangeScaler } from '../../fn/RangeScaler.js';
-	import screenSize from '../../stores/screenSize';
-	import GlobalStyles from '../../config/GlobalStyles';
+	import screenSize from '../../stores/screenSize.js';
+	import GlobalStyles from '../../config/GlobalStyles.js';
 	import FigmaImporter from '../../fn/figmaImporter.js';
-	import getFigmaImportConfig from '../../config/FigmaImportConfig';
-	import readTransitions from '../../fn/readTransitions.js';
+	import getFigmaImportConfig from '../../config/FigmaImportConfig.js';
+	import { createEventDispatcher } from 'svelte';
 	import globalStyle from '../../stores/globalStyles.js';
-
+	const dispatch = createEventDispatcher();
 	let lglobalStyles = $globalStyle;
 
 	let id;
-	let rendered = false;
-	let text;
+	let isMouseHovering = false;
 	let className;
 	let color = lglobalStyles.activeMono;
-	let style = '';
+	let style;
 	let borderColor;
-	let backgroundColor;
+	let backgroundColor = lglobalStyles.activeColor;
 	let onClick;
 	let onTouchStart;
 	let onTouchEnd;
@@ -27,23 +26,37 @@
 	let top;
 	let tabletTop;
 	let tabletLeft;
+	let hoverOpacityMin = 20;
+	let hoverOpacityMax = 40;
 	let left;
 	let horizontalFont;
 	let verticalFont = lglobalStyles.regularMobileFont;
 	let opacity;
 	let backdropFilter;
-	let borderRadius;
+	let borderRadius = lglobalStyles.borderRadius;
+	let defaultValue = '';
+	let inputType = 'text';
 	let show = true;
+	let placeholder = '';
 	let tabletWidth;
 	let desktopFont = lglobalStyles.regularDesktopFont;
 	let horizontalCenter = false;
 	let verticalCenter = false;
 	let fontType = 'rigid';
-	let transitions = {};
-	let slotClassName = '';
 	let figmaImportConfig = { ...getFigmaImportConfig() };
-
+	export let value = defaultValue;
 	let figmaImport = {};
+	let autofocus = false;
+	let readonly = false;
+
+	let passwordValue = '';
+	let passwordDisplayedValue = '';
+
+	function onValueChange(value) {
+		dispatch('onValue', value);
+	}
+
+	$: onValueChange(value);
 
 	const root = document.documentElement;
 	let fontSize = '2.4vh';
@@ -52,10 +65,7 @@
 
 	onMount(() => {
 		fontController();
-		rendered = true;
 	});
-
-	const { inFunc, inOptions, outFunc, outOptions } = readTransitions(transitions);
 
 	function onResize() {
 		clientHeight = root.clientHeight;
@@ -117,7 +127,8 @@
 	export {
 		id,
 		onClick,
-		text,
+		defaultValue,
+		inputType,
 		className,
 		color,
 		borderColor,
@@ -144,19 +155,29 @@
 		verticalCenter,
 		figmaImportConfig,
 		figmaImport,
-		transitions,
-		slotClassName
+		hoverOpacityMin,
+		hoverOpacityMax,
+		autofocus,
+		placeholder,
+		readonly
 	};
 </script>
 
 <svelte:window on:resize={onResize} />
-{#if show && rendered}
-	<div
+{#if show}
+	<input
+		{readonly}
+		{placeholder}
+		{autofocus}
+		type="tel"
+		pattern="[0-9]*"
 		{id}
 		on:touchstart={onTouchStart}
 		on:touchend={onTouchEnd}
 		on:click={onClick}
-		class={`label ${className ? className : ''}`}
+		on:mouseenter={() => (isMouseHovering = true)}
+		on:mouseleave={() => (isMouseHovering = false)}
+		class={`input ${className ? className : ''}`}
 		style="
     opacity: {iu(opacity, '1')}; 
 	font-family: {fontType == 'soft' ? "'Raleway', sans-serif;" : "'Electrolize', sans-serif;"}
@@ -167,7 +188,9 @@
     height: {iu(height, 'auto')}; 
     color: {iu(color, '#FFF')}; 
 	{Object.keys(figmaImport).length > 0 ? FigmaImporter(figmaImport, figmaImportConfig) : ''} 
-    background-color: {iu(backgroundColor, '#2400FF00')};
+    background-color: {iu(backgroundColor, '#0500FF')}{isMouseHovering
+			? hoverOpacityMax
+			: hoverOpacityMin}; 
 	border: solid 1px {iu(borderColor, '#FFFFFF00')};
 	{horizontalCenter || verticalCenter
 			? `transform: translateX(${horizontalCenter == true ? '-50%' : '0px'}) translateY(${
@@ -182,25 +205,29 @@
 			100) *
 			clientHeight +
 			'px;'}
-    --webkit-backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
     backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
-    {style}"
-	>
-		{text ? text : ''}
-		<slot class={slotClassName} />
-	</div>
+    --webkit-backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
+    {iu(style, '')}"
+		bind:value
+	/>
 {/if}
 
 <style>
-	.label {
-		user-select: none;
-		--webkit-user-select: none;
+	.input::selection {
+		background-color: #99999920;
+		color: #aaa;
+	}
+	.input {
 		position: absolute;
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		top: 0%;
-		text-align: center;
-		transition: color linear 0.1s;
+		justify-content: start;
+		text-align: start;
+		outline: none;
+		background: transparent;
+		transition: all linear 0.1s;
+		overflow: scroll;
+		margin: 0;
+		padding: 0;
 	}
 </style>

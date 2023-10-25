@@ -40,6 +40,7 @@
 	import { isOnline } from '../../stores/online';
 	import NetworkIndicator from './NetworkIndicator.svelte';
 	import { touchEnd, touchStart, touchMove } from '../../stores/touchGestures';
+	import { keysStatus } from '../../stores/keysStatus';
 
 	let rendered = false;
 
@@ -54,6 +55,132 @@
 		'#stats': StatsMain
 	};
 
+	async function processEncrypted(encryptedObj, key, allowUpdatesValue) {
+		const encrypted = encryptedObj;
+		await symmetricDecrypt(encrypted.categories.cipher, key, encrypted.categories.iv).then(
+			(decrypted) => {
+				JSON.parse(decrypted);
+				try {
+					const decryptedCategories = JSON.parse(decrypted);
+					categories.set(decryptedCategories);
+				} catch (e) {
+					console.log(e);
+				}
+			}
+		);
+		await symmetricDecrypt(encrypted.tasks.cipher, key, encrypted.tasks.iv).then((decrypted) => {
+			try {
+				const decryptedTasks = JSON.parse(decrypted);
+				tasks.set(decryptedTasks);
+			} catch (e) {
+				console.log(e);
+			}
+		});
+		await symmetricDecrypt(encrypted.tasksLog.cipher, key, encrypted.tasksLog.iv).then(
+			(decrypted) => {
+				try {
+					const decryptedTasksLog = JSON.parse(decrypted);
+					tasksLog.set(decryptedTasksLog);
+				} catch (e) {
+					console.log(e);
+				}
+			}
+		);
+		await symmetricDecrypt(encrypted.days.cipher, key, encrypted.days.iv).then((decrypted) => {
+			try {
+				const decryptedDays = JSON.parse(decrypted);
+				days.set(decryptedDays);
+			} catch (e) {
+				console.log(e);
+			}
+		});
+
+		setInterval(() => {
+			if (Date.now() - $days[$days.length - 1].dayEndUnix >= 86400000) {
+				let lowerBoundUnix =
+					new Date($days[$days.length - 1].dayEndUnix).setHours(23, 59, 59, 59) + 1000;
+				let upperBoundUnix = lowerBoundUnix + 86400000;
+
+				const prevDaysTasks = [];
+				for (let ix = $tasksLog.length - 1; ix >= 0; ix--) {
+					const task = $tasksLog[ix];
+					if (task.taskStartUnix > lowerBoundUnix && task.taskStartUnix < upperBoundUnix) {
+						prevDaysTasks.push(task);
+					} else {
+						break;
+					}
+				}
+
+				let dayObj = {};
+				//get day coverage
+				let trackedTime = 0;
+				for (let ix = 0; ix < prevDaysTasks.length; ix++) {
+					const task = prevDaysTasks[ix];
+					trackedTime += task.taskEndUnix - task.taskStartUnix;
+				}
+				let dayCoverage = ((trackedTime / 86400000) * 100).toFixed(0) + '%';
+
+				dayObj['coverage'] = dayCoverage;
+				dayObj['dayStartUnix'] = lowerBoundUnix;
+				dayObj['dayEndUnix'] = upperBoundUnix - 100;
+
+				//get day state [just routine based so far]
+				const routineTasks = $tasks.filter((task) => task.isRoutine);
+				if (routineTasks.length === 0) {
+					dayObj['routine'] = true;
+					dayObj['status'] = 'success';
+				} else {
+					let routineTasksCompleted = 0;
+					for (let ix = 0; ix < routineTasks.length; ix++) {
+						const task = routineTasks[ix];
+						const taskLog = prevDaysTasks.filter((prevTask) => prevTask.taskID === task.id)[0];
+						if (taskLog && task) {
+							let scheduledStartUnix = new Date(lowerBoundUnix).setHours(
+								task.expectedStart[0],
+								task.expectedStart[1],
+								task.expectedStart[3],
+								task.expectedStart[4]
+							);
+							let scheduledEndUnix = new Date(lowerBoundUnix).setHours(
+								task.expectedEnd[0],
+								task.expectedEnd[1],
+								task.expectedEnd[3],
+								task.expectedEnd[4]
+							);
+							let startedOnTime = false;
+							let endedOnTime = false;
+							let acceptableOffset = 1000 * 60 * 20;
+							if (Math.abs(scheduledStartUnix - taskLog.taskStartUnix) < acceptableOffset) {
+								startedOnTime = true;
+							}
+							if (Math.abs(scheduledEndUnix - taskLog.taskEndUnix) < acceptableOffset) {
+								endedOnTime = true;
+							}
+							if (startedOnTime && endedOnTime) {
+								routineTasksCompleted++;
+							}
+						}
+					}
+					if (routineTasksCompleted === routineTasks.length) {
+						dayObj['routine'] = true;
+						dayObj['status'] = 'success';
+					} else {
+						dayObj['routine'] = false;
+						dayObj['status'] = 'fail';
+					}
+				}
+				days.update((days) => {
+					days.push(dayObj);
+					return days;
+				});
+			}
+		}, 1000);
+
+		console.log(Date.now());
+		allowUpdates.set(allowUpdatesValue);
+		updateLabel.set('none');
+	}
+
 	onMount(() => {
 		if (localStorage.getItem('privateKey') === null || localStorage.getItem('simkey') === null) {
 			window.location.href = '/login';
@@ -62,8 +189,13 @@
 			rendered = true;
 			importSymmetricKey(JSON.parse(localStorage.getItem('simkey')))
 				.then((key) => {
+					keysStatus.set(1);
 					if (localStorage.getItem('accountID') === null) {
 						window.location.href = '/login';
+					}
+					const cache = JSON.parse(localStorage.getItem('encryptedOfflineCache'));
+					if (cache !== null) {
+						processEncrypted(cache, key, false);
 					}
 					fetch(domainGetter('/account/latest'), {
 						method: 'POST',
@@ -72,171 +204,61 @@
 							at: localStorage.getItem('at')
 						}),
 						credentials: 'include'
-					}).then((res) => {
-						res
-							.json()
-							.then(async (responseData) => {
-								isOnline.set(1);
-								if (responseData.id === 'ATX-810') {
-									window.location.href = '/login';
-								}
-								if (responseData.error === undefined) {
-									////////////DO NOT FORGET TO UNDO
-									const encrypted = responseData.encrypted;
-									if (responseData.encrypted === null) {
+					})
+						.then((res) => {
+							res
+								.json()
+								.then(async (responseData) => {
+									isOnline.set(1);
+									if (responseData.id === 'ATX-810') {
 										window.location.href = '/login';
 									}
-									localStorage.setItem('publicKey', responseData.encrypted.publicKey);
-									await symmetricDecrypt(
-										encrypted.categories.cipher,
-										key,
-										encrypted.categories.iv
-									).then((decrypted) => {
-										JSON.parse(decrypted);
+									if (responseData.error === undefined) {
+										////////////DO NOT FORGET TO UNDO
+										if (responseData.encrypted === null) {
+											window.location.href = '/login';
+										}
 										try {
-											const decryptedCategories = JSON.parse(decrypted);
-											categories.set(decryptedCategories);
-										} catch (e) {
-											console.log(e);
-										}
-									});
-									await symmetricDecrypt(encrypted.tasks.cipher, key, encrypted.tasks.iv).then(
-										(decrypted) => {
-											try {
-												const decryptedTasks = JSON.parse(decrypted);
-												tasks.set(decryptedTasks);
-											} catch (e) {
-												console.log(e);
-											}
-										}
-									);
-									await symmetricDecrypt(
-										encrypted.tasksLog.cipher,
-										key,
-										encrypted.tasksLog.iv
-									).then((decrypted) => {
-										try {
-											const decryptedTasksLog = JSON.parse(decrypted);
-											tasksLog.set(decryptedTasksLog);
-										} catch (e) {
-											console.log(e);
-										}
-									});
-									await symmetricDecrypt(encrypted.days.cipher, key, encrypted.days.iv).then(
-										(decrypted) => {
-											try {
-												const decryptedDays = JSON.parse(decrypted);
-												days.set(decryptedDays);
-											} catch (e) {
-												console.log(e);
-											}
-										}
-									);
-
-									setInterval(() => {
-										if (Date.now() - $days[$days.length - 1].dayEndUnix >= 86400000) {
-											let lowerBoundUnix =
-												new Date($days[$days.length - 1].dayEndUnix).setHours(23, 59, 59, 59) +
-												1000;
-											let upperBoundUnix = lowerBoundUnix + 86400000;
-
-											const prevDaysTasks = [];
-											for (let ix = $tasksLog.length - 1; ix >= 0; ix--) {
-												const task = $tasksLog[ix];
-												if (
-													task.taskStartUnix > lowerBoundUnix &&
-													task.taskStartUnix < upperBoundUnix
-												) {
-													prevDaysTasks.push(task);
-												} else {
-													break;
-												}
-											}
-
-											let dayObj = {};
-											//get day coverage
-											let trackedTime = 0;
-											for (let ix = 0; ix < prevDaysTasks.length; ix++) {
-												const task = prevDaysTasks[ix];
-												trackedTime += task.taskEndUnix - task.taskStartUnix;
-											}
-											let dayCoverage = ((trackedTime / 86400000) * 100).toFixed(0) + '%';
-
-											dayObj['coverage'] = dayCoverage;
-											dayObj['dayStartUnix'] = lowerBoundUnix;
-											dayObj['dayEndUnix'] = upperBoundUnix - 100;
-
-											//get day state [just routine based so far]
-											const routineTasks = $tasks.filter((task) => task.isRoutine);
-											if (routineTasks.length === 0) {
-												dayObj['routine'] = true;
-												dayObj['status'] = 'success';
+											if (responseData.encrypted.tx < cache.tx) {
+												processEncrypted(cache, key, true);
 											} else {
-												let routineTasksCompleted = 0;
-												for (let ix = 0; ix < routineTasks.length; ix++) {
-													const task = routineTasks[ix];
-													const taskLog = prevDaysTasks.filter(
-														(prevTask) => prevTask.taskID === task.id
-													)[0];
-													if (taskLog && task) {
-														let scheduledStartUnix = new Date(lowerBoundUnix).setHours(
-															task.expectedStart[0],
-															task.expectedStart[1],
-															task.expectedStart[3],
-															task.expectedStart[4]
-														);
-														let scheduledEndUnix = new Date(lowerBoundUnix).setHours(
-															task.expectedEnd[0],
-															task.expectedEnd[1],
-															task.expectedEnd[3],
-															task.expectedEnd[4]
-														);
-														let startedOnTime = false;
-														let endedOnTime = false;
-														let acceptableOffset = 1000 * 60 * 20;
-														if (
-															Math.abs(scheduledStartUnix - taskLog.taskStartUnix) <
-															acceptableOffset
-														) {
-															startedOnTime = true;
-														}
-														if (
-															Math.abs(scheduledEndUnix - taskLog.taskEndUnix) < acceptableOffset
-														) {
-															endedOnTime = true;
-														}
-														if (startedOnTime && endedOnTime) {
-															routineTasksCompleted++;
-														}
-													}
-												}
-												if (routineTasksCompleted === routineTasks.length) {
-													dayObj['routine'] = true;
-													dayObj['status'] = 'success';
-												} else {
-													dayObj['routine'] = false;
-													dayObj['status'] = 'fail';
-												}
+												localStorage.setItem(
+													'encryptedOfflineCache',
+													JSON.stringify(responseData.encrypted)
+												);
+												processEncrypted(responseData.encrypted, key, true);
 											}
-											days.update((days) => {
-												days.push(dayObj);
-												return days;
-											});
+										} catch (e) {
+											localStorage.setItem(
+												'encryptedOfflineCache',
+												JSON.stringify(responseData.encrypted)
+											);
+											processEncrypted(responseData.encrypted, key, true);
 										}
-									}, 1000);
-
-									allowUpdates.set(true);
-									updateLabel.set('none');
+									}
+								})
+								.catch((e) => {
+									console.log(e);
+									isOnline.set(-2);
+								});
+						})
+						.catch((e) => {
+							isOnline.set(0);
+							importSymmetricKey(JSON.parse(localStorage.getItem('simkey'))).then((key) => {
+								keysStatus.set(1);
+								if (localStorage.getItem('accountID') === null) {
+									window.location.href = '/login';
 								}
-							})
-							.catch((e) => {
-								console.log(e);
-								isOnline.set(-2);
+								processEncrypted(
+									JSON.parse(localStorage.getItem('encryptedOfflineCache')),
+									key,
+									true
+								);
 							});
-					});
+						});
 				})
 				.catch((err) => {
-					isOnline.set(0);
+					keysStatus.set(0);
 					console.log(err);
 				});
 
@@ -261,16 +283,5 @@
 <root>
 	{#if rendered}
 		<svelte:component this={hashToComponent[$windowHash]} />
-		{#if $updateLabel === '[Syncing]'}
-			<Box
-				width="100%"
-				height="95%"
-				top="5%"
-				backgroundColor="#000000CC"
-				backdropFilter="blur(5px)"
-				style="z-index: 500;"
-				left="0%"><SyncingDeco width="50%" height="50%" color={$globalStyle.activeColor} /></Box
-			>
-		{/if}
 	{/if}
 </root>

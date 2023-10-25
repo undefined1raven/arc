@@ -21,18 +21,20 @@
 	import symmetricEncrypt from '../fn/crypto/symmetricEncrypt';
 	import MenuMain from '../components/Menu/MenuMain.svelte';
 	import { activeApp } from '../stores/activeApp';
+	import TessMain from '../components/Tess/TessMain.svelte';
+	import { getUplinkDoc } from '../fn/uplinkdocPrep';
 
-	const activeAppToComponent = { arc: HomeMain, sid: Label, tess: Label, menu: MenuMain };
+	const activeAppToComponent = { arc: HomeMain, sid: Label, tess: TessMain, menu: MenuMain };
 
 	let uplinkChecker;
 	let sent = false;
 	let lastStoreUpdateUnix = 0;
 
 	onMount(() => {
-		uplinkChecker = setInterval(() => {
+		uplinkChecker = setInterval(async () => {
 			if (Date.now() - lastStoreUpdateUnix > 2000 && sent === false && $allowUpdates === true) {
 				updateLabel.set('[Updating]');
-				sendUpdate();
+				await sendUpdate();
 				sent = true;
 			}
 		}, 500);
@@ -66,73 +68,35 @@
 		return;
 	}
 
-	function sendUpdate() {
-		let accountID = localStorage.getItem('accountID');
-		if (accountID === null) {
-			window.location.href = '/login';
-		} else {
-			importSymmetricKey(JSON.parse(localStorage.getItem('simkey')))
-				.then(async (simkey) => {
-					let uplinkDoc = {};
-					await symmetricEncrypt(JSON.stringify($categories), simkey)
-						.then((result) => {
-							uplinkDoc['categories'] = { cipher: result.cipher, iv: result.iv };
-						})
-						.catch((e) => {
-							handleEncryptionError();
-						});
-					await symmetricEncrypt(JSON.stringify($tasks), simkey)
-						.then((result) => {
-							uplinkDoc['tasks'] = { cipher: result.cipher, iv: result.iv };
-						})
-						.catch((e) => {
-							handleEncryptionError();
-						});
-					await symmetricEncrypt(JSON.stringify($days), simkey)
-						.then((result) => {
-							uplinkDoc['days'] = { cipher: result.cipher, iv: result.iv };
-						})
-						.catch((e) => {
-							handleEncryptionError();
-						});
-					await symmetricEncrypt(JSON.stringify($tasksLog), simkey)
-						.then((result) => {
-							uplinkDoc['tasksLog'] = { cipher: result.cipher, iv: result.iv };
-						})
-						.catch((e) => {
-							handleEncryptionError();
-						});
-					uplinkDoc['accountID'] = accountID;
-
-					if (localStorage.getItem('at') === null) {
-						window.location.href = '/login';
-					}
-					uplinkDoc['at'] = localStorage.getItem('at');
-
-					fetch(domainGetter('/account/update'), {
-						method: 'POST',
-						body: JSON.stringify(uplinkDoc),
-						credentials: 'include'
-					})
-						.then((res) => {
-							res.json().then((responseData) => {
-								if (responseData.error !== undefined) {
-									if (responseData.id === 'ATX-810') {
-										window.location.href = '/login';
-									}
-								}
-								try {
-									if (responseData.success) {
-										updateLabel.set('none');
-									}
-								} catch (e) {}
-							});
-						})
-						.catch((e) => {});
+	async function sendUpdate() {
+		let uplinkdocResults = await getUplinkDoc($categories, $tasks, $tasksLog, $days, true);
+		if (
+			uplinkdocResults !== undefined &&
+			uplinkdocResults.status === true &&
+			uplinkdocResults.uplinkDoc !== undefined
+		) {
+			fetch(domainGetter('/account/update'), {
+				method: 'POST',
+				body: JSON.stringify(uplinkdocResults.uplinkDoc),
+				credentials: 'include'
+			})
+				.then((res) => {
+					res.json().then((responseData) => {
+						if (responseData.error !== undefined) {
+							if (responseData.id === 'ATX-810') {
+								window.location.href = '/login';
+							}
+						}
+						try {
+							if (responseData.success) {
+								updateLabel.set('none');
+							}
+						} catch (e) {}
+					});
 				})
-				.catch((e) => {
-					console.log(e);
-				});
+				.catch((e) => {});
+		} else if (uplinkdocResults.status === false) {
+			handleEncryptionError();
 		}
 	}
 

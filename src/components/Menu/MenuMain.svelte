@@ -18,6 +18,9 @@
 </script>
 
 <Button
+	onClick={() => {
+		activeApp.set('tess');
+	}}
 	borderColor={appColors.tess.activeColor}
 	backgroundColor={appColors.tess.activeColor}
 	hoverOpacityMin={10}

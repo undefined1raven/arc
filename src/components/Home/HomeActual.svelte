@@ -20,6 +20,10 @@
 	import timePadding from '../../fn/timePadding';
 	import screenSize from '../../stores/screenSize';
 	import { updateLabel } from '../../stores/updateLabel';
+	import domainGetter from '../../fn/domainGetter';
+	import symmetricDecrypt from '../../fn/crypto/symmetricDecrypt';
+	import symmetricEncrypt from '../../fn/crypto/symmetricEncrypt';
+	import { importSymmetricKey } from '../../fn/crypto/keyOps';
 
 	let weekDataDefault = [
 		{ day: 'Sun', status: 'upcoming', routine: true, tasks: true, ini: false },
@@ -49,7 +53,7 @@
 		pending: $globalStyle.activeColor,
 		upcoming: $globalStyle.secondaryMono
 	};
- 
+
 	let interval500ms;
 
 	function updateWeekData() {

@@ -3,7 +3,8 @@
 	import globalStyle from '../../stores/globalStyles';
 	import Box from '../common/Box.svelte';
 	import { isOnline } from '../../stores/online';
-	import NetworkDeco from '../deco/NetworkDeco.svelte';
+	import KeyDeco from '../deco/KeyDeco.svelte';
+	import { keysStatus } from '../../stores/keysStatus';
 	import { getDynamicBorderRadius } from '../../fn/dynamicBorders';
 
 	const colorsHash = {
@@ -16,12 +17,12 @@
 
 <Box
 	transitions={{
-		in: { func: fly, options: { duration: 400, y: '-50%' } }
+		in: { func: fly, options: { delay: 100, duration: 400, y: '-50%' } }
 	}}
 	width="10%"
 	height="100%"
-	backgroundColor="{colorsHash[$isOnline.toString()]}20"
-	style="right: 0%; border-bottom-right-radius: 0px; border-top-right-radius: 0px;"
+	backgroundColor="{colorsHash[$keysStatus.toString()]}20"
+	style="right: 11%"
 	borderRadius={getDynamicBorderRadius(1)}
-	><NetworkDeco color={colorsHash[$isOnline.toString()]} width="80%" height="80%" /></Box
+	><KeyDeco color={colorsHash[$keysStatus.toString()]} width="80%" height="80%" /></Box
 >
