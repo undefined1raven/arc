@@ -62,7 +62,7 @@
 						width="100%"
 						height="100%"
 						transitions={{
-							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } }
 						}}
 					>
 						<Button
@@ -83,7 +83,7 @@
 							hoverOpacityMax={20}
 							style="border: solid 1px {$globalStyle.activeColor};"
 							transitions={{
-								in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
+								in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } }
 							}}
 						>
 							<Label
@@ -169,7 +169,7 @@
 						width="100%"
 						height="100%"
 						transitions={{
-							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } }
 						}}
 					>
 						<Button
@@ -184,7 +184,7 @@
 								? $globalStyle.activeColor
 								: $globalStyle.secondaryColor};"
 							transitions={{
-								in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
+								in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } }
 							}}
 						>
 							<Label

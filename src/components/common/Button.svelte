@@ -34,12 +34,14 @@
 	let touchStartUnix = 0;
 	let fontType = 'rigid';
 	let fontSize = '2.4vh';
+	let onSelect;
 	let isMouseHovering = false;
 	const root = document.documentElement;
 	let clientWidth = root.clientWidth;
 	let clientHeight = root.clientHeight;
 	let horizontalCenter = false;
 	let verticalCenter = false;
+	let gradientBackground = false;
 	let figmaImportConfig = { ...getFigmaImportConfig() };
 	let mouseEnter;
 	let mouseLeave;
@@ -126,11 +128,13 @@
 		hoverOpacityMin,
 		hoverOpacityMax,
 		horizontalCenter,
+		onSelect,
 		verticalCenter,
 		figmaImport,
 		figmaImportConfig,
 		mouseEnter,
 		mouseLeave,
+		gradientBackground,
 		transitions,
 		toolTipText
 	};
@@ -161,6 +165,12 @@
 			}
 			isMouseHovering = false;
 		}}
+		on:contextmenu={(e) => {
+			e.preventDefault();
+			if (onSelect !== undefined) {
+				onSelect?.call(e);
+			}
+		}}
 		class={`button ${iu(className, '')}`}
 		style="
         opacity: {iu(opacity, '1')}; 
@@ -174,12 +184,17 @@
         background-color: {iu(backgroundColor, '#0500FF')}{isMouseHovering
 			? hoverOpacityMax
 			: hoverOpacityMin}; 
+		background: {gradientBackground
+			? `radial-gradient(275.54% 103.87% at 12.3% 17.1%, ${iu(backgroundColor, '#0500FF')}${
+					isMouseHovering ? hoverOpacityMax : hoverOpacityMin
+			  } 0%, ${iu(backgroundColor, '#0500FF')}00 100%);`
+			: 'auto;'}
 		{horizontalCenter || verticalCenter
 			? `transform: translateX(${horizontalCenter == true ? '-50%' : '0px'}) translateY(${
 					verticalCenter == true ? '-50%' : '0px'
 			  });`
 			: ''};
-		font-family: {fontType == 'soft' ? "'Raleway', sans-serif;" : "'Electrolize', sans-serif;"}
+		font-family: {fontType == 'soft' ? "'Oxanium', sans-serif;" : "'Oxanium', sans-serif;"}
 		border: solid 1px {iu(borderColor, '#0500FF')};
         border-radius: {((parseFloat(
 			iu(borderRadius, '0px')

@@ -25,9 +25,21 @@
 	import { categories, days, tasks, tasksLog } from '../../stores/dayViewSelectedDay';
 	import symmetricEncrypt from '../../fn/crypto/symmetricEncrypt';
 	import symmetricDecrypt from '../../fn/crypto/symmetricDecrypt';
+	import isMobile from '../../fn/isMobile';
+	import VerticalLine from '../common/VerticalLine.svelte';
+	import { getTransition } from '../../fn/getTransisitions';
+	import List from '../common/List.svelte';
+	import DecoX from '../deco/DecoX.svelte';
 	let stage = 'keyGen';
-
-	let keyExport = { privateKey: '', publicKey: '', ready: false, accountID: '', simkey: '' };
+	let showDecoGrid = false;
+	let keyExport = {
+		privateKey: '',
+		publicKey: '',
+		ready: false,
+		accountID: '',
+		simkey: '',
+		tess_simkey: 'none'
+	};
 
 	let actionButtonState = { label: 'Download Key', stage: 'download' };
 
@@ -101,10 +113,10 @@
 								try {
 									const dataObj = JSON.parse(dataString);
 									if (dataObj.success) {
-										localStorage.setItem('at', dataObj.at);
 										stage = 'redirecting';
 										setTimeout(() => {
 											localStorage.setItem('accountID', keyExport.accountID);
+											localStorage.setItem('tess_simkey', keyExport.tess_simkey);
 											window.location.href = '/#home';
 										}, 300);
 									} else {
@@ -122,11 +134,12 @@
 		} else {
 			if (keyExport.ready) {
 				download(
-					'arc_key.txt',
+					'arc_key.key.txt',
 					JSON.stringify({
 						pk: keyExport.privateKey,
 						simkey: localStorage.getItem('simkey'),
-						id: keyExport.accountID
+						id: keyExport.accountID,
+						tess_simkey: localStorage.getItem('tess_simkey')
 					})
 				);
 				actionButtonState = { label: 'Confirm Download', stage: 'confirm' };
@@ -135,6 +148,9 @@
 	}
 
 	onMount(async () => {
+		setTimeout(() => {
+			showDecoGrid = true;
+		}, 150);
 		const simkey = await getNewSymmetricKey();
 		exportCryptoKey(simkey).then((exportedSimkey) => {
 			keyExport.simkey = exportedSimkey;
@@ -168,7 +184,10 @@
 <div>
 	<Box
 		transitions={{ in: { func: fly, options: { duration: 700, y: '-10%' } } }}
-		figmaImport={{ mobile: { top: '0%', left: '0%', width: '100%', height: 103 } }}
+		figmaImport={{
+			mobile: { top: '0%', left: '0%', width: '100%', height: 103 },
+			desktop: { width: '0%', height: '0%' }
+		}}
 	>
 		<Logo width="50%" height="60%" />
 		<HorizontalLine
@@ -177,60 +196,140 @@
 		/>
 	</Box>
 	<Label
+		transitions={getTransition(2)}
 		verticalFont={$globalStyle.mediumMobileFont}
 		horizontalCenter={true}
 		color={$globalStyle.activeMono}
 		borderRadius="5px"
+		desktopFont={$globalStyle.smallDesktopFont}
 		style="padding-left: 2%; padding-right: 2%;"
 		figmaImport={{
-			mobile: { top: 172, left: '50%', width: 297 - 0.04 * $screenSize.width, height: 84 }
+			mobile: { top: 172, left: '50%', width: 297 - 0.04 * $screenSize.width, height: 84 },
+			desktop: { top: 368, left: '50%', width: 400, height: 84 }
 		}}
 		text="This app uses key-based authentication to encrypt your data and to identify you"
 		backgroundColor="{$globalStyle.activeColor}10"
 	/>
 	<Label
+		transitions={getTransition(3)}
 		verticalFont={$globalStyle.mediumMobileFont}
 		horizontalCenter={true}
 		color={$globalStyle.activeMono}
 		borderRadius="5px"
 		style="padding-left: 2%; padding-right: 2%;"
 		figmaImport={{
-			mobile: { top: 264, left: '50%', width: 297 - 0.04 * $screenSize.width, height: 84 }
+			mobile: { top: 264, left: '50%', width: 297 - 0.04 * $screenSize.width, height: 84 },
+			desktop: { top: 466, left: '50%', width: 400, height: 84 }
 		}}
 		text="The key is stored locally and never leaves your device"
+		desktopFont={$globalStyle.smallDesktopFont}
 		backgroundColor="{$globalStyle.activeColor}10"
 	/>
 	<Label
+		transitions={getTransition(4)}
 		color={$globalStyle.activeMono}
 		borderRadius="5px"
-		figmaImport={{ mobile: { top: 362, left: 30, width: 97, height: 30 } }}
+		desktopFont={$globalStyle.smallDesktopFont}
+		figmaImport={{
+			mobile: { top: 362, left: 30, width: 97, height: 30 },
+			desktop: { top: 565, left: 720, width: 200, height: 50 }
+		}}
 		text="Status"
 		backgroundColor="{$globalStyle.activeColor}10"
 	/>
 	<Label
+		transitions={getTransition(4)}
 		color={$globalStyle.activeMono}
+		desktopFont={$globalStyle.smallDesktopFont}
 		borderRadius="5px"
-		figmaImport={{ mobile: { top: 362, left: 142, width: 185, height: 30 } }}
+		figmaImport={{
+			mobile: { top: 362, left: 142, width: 185, height: 30 },
+			desktop: { top: 565, left: 930, width: 265, height: 50 }
+		}}
 		text="Creating Key"
 		backgroundColor="{$globalStyle.activeColor}10"
 		{...stageToLabelProps[stage]}
 	/>
 	<Label
+		transitions={getTransition(6)}
 		borderRadius="5px"
-		figmaImport={{ mobile: { top: 400, left: 30, width: 297, height: 30 } }}
+		figmaImport={{
+			mobile: { top: 400, left: 30, width: 297, height: 30 },
+			desktop: { top: 720, left: '50%', width: 265, height: 50 }
+		}}
+		horizontalCenter={isMobile() ? false : true}
+		desktopFont={$globalStyle.smallDesktopFont}
 		text="ARC_ID [{keyExport.accountID.substring(7, 14).toUpperCase()}]"
 		color={$globalStyle.secondaryMono}
 		verticalFont={$globalStyle.smallMobileFont}
 	/>
 	{#if stage !== 'keyGen'}
 		<Button
+			transitions={getTransition(5)}
 			onClick={() => {
 				downloadKey();
 			}}
-			figmaImport={{ mobile: { top: 459, left: 30, width: 297, height: 44 } }}
+			desktopFont={$globalStyle.mediumDesktopFont}
+			figmaImport={{
+				mobile: { top: 459, left: 30, width: 297, height: 44 },
+				desktop: { top: 640, left: '50%', width: 450, height: 70 }
+			}}
+			horizontalCenter={isMobile() ? false : true}
 			label={actionButtonState.label}
 			hoverOpacityMin={0}
 		/>
+	{/if}
+	{#if isMobile() === false}
+		{#if showDecoGrid}
+			<Box
+				style="z-index: -1;"
+				backgroundColor="{$globalStyle.activeColor}00"
+				transitions={{ in: { func: fade, options: { y: '-1%', duration: 500 } } }}
+				figmaImport={{ desktop: { top: 0, left: 0, width: '100%', height: '100%' } }}
+			>
+				<List direction="row" width="100%" height="100%" style="flex-wrap: wrap; overflow: hidden;">
+					{#each new Array(270) as x, ix}
+						<ListItem marginBottom="3%" width="5vh" height="5vh" style="min-width: 5%;">
+							<DecoX
+								style="transform: rotate(-45deg);"
+								width="100%"
+								height="100%"
+								color={$globalStyle.activeColor}
+								opacity={0.5}
+							/>
+						</ListItem>
+					{/each}
+				</List>
+			</Box>
+		{/if}
+		<Button
+			transitions={getTransition(6)}
+			onClick={() => {
+				window.location.href = '/login';
+			}}
+			color={$globalStyle.secondaryMono}
+			borderColor={$globalStyle.secondaryColor}
+			desktopFont={$globalStyle.smallDesktopFont}
+			figmaImport={{
+				desktop: { top: 840, left: '50%', width: 450, height: 70 }
+			}}
+			horizontalCenter={isMobile() ? false : true}
+			label="Already have an account? Go to Login"
+			hoverOpacityMin={0}
+		/>
+		<VerticalLine
+			color={$globalStyle.activeColor}
+			style="border-radius: 15px;"
+			figmaImport={{ desktop: { top: 30, left: 37, width: 2, height: 1020 } }}
+		/>
+		<VerticalLine
+			color={$globalStyle.activeColor}
+			style="border-radius: 15px;"
+			figmaImport={{ desktop: { top: 30, left: 30, width: 1, height: 1020 } }}
+		/>
+		<Box figmaImport={{ desktop: { top: 30, left: 51, width: 143, height: 50 } }}>
+			<Logo width="100%" height="100%" top="0%" />
+		</Box>
 	{/if}
 </div>
 

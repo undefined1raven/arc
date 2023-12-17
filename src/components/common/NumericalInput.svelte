@@ -180,7 +180,7 @@
 		class={`input ${className ? className : ''}`}
 		style="
     opacity: {iu(opacity, '1')}; 
-	font-family: {fontType == 'soft' ? "'Raleway', sans-serif;" : "'Electrolize', sans-serif;"}
+	font-family: {fontType == 'soft' ? "'Oxanium', sans-serif;" : "'Oxanium', sans-serif;"}
     font-size: {iu(fontSize, '2vh')}; 
     left: {positionParser(iu(left, 'auto'), iu(tabletLeft, 'auto'))}; 
     top: {positionParser(iu(top, 'auto'), iu(tabletTop, 'auto'))}; 

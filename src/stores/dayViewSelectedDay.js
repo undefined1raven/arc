@@ -17,6 +17,7 @@ const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month:
 export let days = writable([
     { status: 'upcoming', routine: true, coverage: '1%', dayStartUnix: new Date(dateStr).getTime() - 86400000, dayEndUnix: new Date(dateStr).getTime() - 1, },
 ]);
+export let imported = writable(false);
 
 
 

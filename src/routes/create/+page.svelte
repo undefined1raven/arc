@@ -6,11 +6,9 @@
 	let renderedComponent;
 
 	onMount(() => {
-		if (isMobile()) {
-			renderedComponent = new CreateAccountMain({
-				target: document.documentElement
-			});
-		}
+		renderedComponent = new CreateAccountMain({
+			target: document.documentElement
+		});
 	});
 
 	onDestroy(() => {

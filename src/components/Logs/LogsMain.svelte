@@ -86,7 +86,7 @@
 				<Box
 					width="100%"
 					height="100%"
-					transitions={{ in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } } }}
+					transitions={{ in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } } }}
 				>
 					<Button
 						onClick={() => {
@@ -99,7 +99,7 @@
 						hoverOpacityMax={20}
 						style="border: solid 1px {colorHash[day.status]};"
 						transitions={{
-							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } }
 						}}
 					>
 						<Label

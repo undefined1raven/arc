@@ -1,18 +1,13 @@
 import domainGetter from "./domainGetter";
-import axios from "axios";
 
 function logout() {
-    axios
-        .get(domainGetter('/logout'), { withCredentials: true })
-        .then(() => {
-            localStorage.setItem('authed', 'false');
-            window.location.href = '/';
-            localStorage.removeItem('fullName');
-            localStorage.removeItem('email');
-            localStorage.removeItem('verifiedEmail');
-            localStorage.removeItem('ud_fetch_unix');
-        })
-        .catch((e) => { });
+    localStorage.removeItem('privateKey');
+    localStorage.removeItem('accountID');
+    localStorage.removeItem('simkey');
+    localStorage.removeItem('tess_simkey');
+    localStorage.removeItem('at');
+    window.location.href = '/login';
+
 }
 
 

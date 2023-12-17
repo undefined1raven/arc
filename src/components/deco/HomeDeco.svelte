@@ -1,5 +1,5 @@
 <script>
-import globalStyle from '../../stores/globalStyles';	 
+	import globalStyle from '../../stores/globalStyles';
 	let lglobalStyles = $globalStyle;
 	globalStyle.subscribe((gs) => {
 		lglobalStyles = gs;
@@ -9,15 +9,16 @@ import globalStyle from '../../stores/globalStyles';
 	let left = 'auto';
 	let top = 'auto';
 	let style = '';
+	let opacity = 1;
 	let color = lglobalStyles.activeColor;
 
-	export { height, width, left, top, style, color };
+	export { opacity, height, width, left, top, style, color };
 </script>
 
 <svg
 	{width}
 	{height}
-	style="position: absolute; top: {top}; left: {left}; {style}"
+	style="position: absolute; top: {top}; left: {left}; opacity: {opacity}; {style}"
 	viewBox="0 0 27 42"
 	fill="none"
 	xmlns="http://www.w3.org/2000/svg"

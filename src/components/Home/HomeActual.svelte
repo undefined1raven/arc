@@ -24,6 +24,15 @@
 	import symmetricDecrypt from '../../fn/crypto/symmetricDecrypt';
 	import symmetricEncrypt from '../../fn/crypto/symmetricEncrypt';
 	import { importSymmetricKey } from '../../fn/crypto/keyOps';
+	import { RTC } from '../../stores/RTC';
+	import { getTransition } from '../../fn/getTransisitions';
+	import ColorBox from '../common/ColorBox.svelte';
+	import Input from '../common/Input.svelte';
+	import SearchDeco from '../deco/SearchDeco.svelte';
+	import isMobile from '../../fn/isMobile';
+	import { activeApp } from '../../stores/activeApp';
+
+	let isColorBoxBeingShown = false;
 
 	let weekDataDefault = [
 		{ day: 'Sun', status: 'upcoming', routine: true, tasks: true, ini: false },
@@ -46,7 +55,7 @@
 	];
 
 	const dayHash = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wen', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
-
+	let taskPickerSearchInput = '';
 	$: colorHash = {
 		success: $globalStyle.successColor,
 		fail: $globalStyle.errorColor,
@@ -171,7 +180,10 @@
 			options: { delay: 100, duration: 400, y: '-2%' }
 		}
 	}}
-	figmaImport={{ mobile: { top: 32, height: 330, width: 350, left: '50%' } }}
+	figmaImport={{
+		mobile: { top: 32, height: 330, width: 350, left: '50%' },
+		desktop: { top: 252, left: 421, width: 334, height: 553 }
+	}}
 	horizontalCenter={true}
 >
 	<ul class="weekList">
@@ -185,8 +197,40 @@
 				<Box
 					width="100%"
 					height="100%"
-					transitions={{ in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } } }}
+					transitions={{ in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } } }}
 				>
+					<Label
+						color={colorHash[dayObj.status]}
+						width={isMobile() ? '24%' : '35%'}
+						height="100%"
+						desktopFont={$globalStyle.smallDesktopFont}
+						top="0%"
+						style="right: 2%;"
+						verticalFont={$globalStyle.smallMobileFont}
+						text="{dayObj.coverage ? dayObj.coverage + ' coverage' : ''} "
+					/>
+
+					<Label
+						width="25%"
+						height="50%"
+						left="18%"
+						desktopFont={$globalStyle.smallDesktopFont}
+						text="Routine"
+						backgroundColor="{getRoutineTagColor(dayObj)}20"
+						color={getRoutineTagColor(dayObj)}
+						borderRadius="3px"
+					/>
+					<Label
+						color={colorHash[dayObj.status]}
+						width="10%"
+						desktopFont={$globalStyle.smallDesktopFont}
+						height="100%"
+						left="4%"
+						top="0%"
+						borderRadius={'0'}
+						style="padding-right: 3.5%; border-right: solid 1px {colorHash[dayObj.status]};"
+						text={dayObj.day}
+					/>
 					<Button
 						onClick={() => {
 							if (dayObj.status !== 'upcoming') {
@@ -194,42 +238,14 @@
 								window.location.hash = 'dayView';
 							}
 						}}
-						width="98%"
+						width="99%"
 						height="100%"
 						borderColor={colorHash[dayObj.status]}
 						backgroundColor={colorHash[dayObj.status]}
 						borderRadius="3px"
 						hoverOpacityMin={0}
 						hoverOpacityMax={dayObj.status === 'upcoming' ? 0 : 20}
-					>
-						<Label
-							color={colorHash[dayObj.status]}
-							width="10%"
-							height="100%"
-							left="2%"
-							top="0%"
-							style="padding-right: 2%; border-right: solid 1px {colorHash[dayObj.status]};"
-							text={dayObj.day}
-						/>
-						<Label
-							color={colorHash[dayObj.status]}
-							width="24%"
-							height="100%"
-							top="0%"
-							style="right: 2%;"
-							verticalFont={$globalStyle.smallMobileFont}
-							text="{dayObj.coverage ? dayObj.coverage + ' coverage' : ''} "
-						/>
-						<Label
-							width="25%"
-							height="50%"
-							left="18%"
-							text="Routine"
-							backgroundColor="{getRoutineTagColor(dayObj)}20"
-							color={getRoutineTagColor(dayObj)}
-							borderRadius="3px"
-						/>
-					</Button>
+					/>
 				</Box>
 			</ListItem>
 		{/each}
@@ -242,7 +258,10 @@
 			options: { delay: 200, duration: 400, y: '-2%' }
 		}
 	}}
-	figmaImport={{ mobile: { top: 355, left: '50%', width: 350, height: 216 } }}
+	figmaImport={{
+		mobile: { top: 355, left: '50%', width: 350, height: 168 },
+		desktop: { top: 390, left: 793, height: 300, width: 334 }
+	}}
 	horizontalCenter={true}
 	backgroundColor="{currentActivityDockColors[currentActivityDockStatus]}10"
 >
@@ -251,16 +270,22 @@
 			text="Select a task to keep track of time"
 			color={currentActivityDockColors[currentActivityDockStatus]}
 			width="100%"
+			desktopFont={$globalStyle.mediumDesktopFont}
 			left="0%"
-			top="20%"
+			top={isMobile() ? '20%' : '8%'}
 		/>
 		<Button
 			onClick={() => {
 				taskPickingMode = true;
 			}}
+			onSelect={() => {
+				isColorBoxBeingShown = true;
+			}}
 			label="Task Picker"
 			width="80%"
 			height="20%"
+			top={isMobile() ? 'auto' : '45%'}
+			desktopFont={$globalStyle.mediumDesktopFont}
 			hoverOpacityMin={0}
 			hoverOpacityMax={30}
 			color={currentActivityDockColors[currentActivityDockStatus]}
@@ -272,7 +297,8 @@
 			color={currentActivityDockColors[currentActivityDockStatus]}
 			width="100%"
 			left="0%"
-			top="70%"
+			desktopFont={$globalStyle.mediumDesktopFont}
+			top={isMobile() ? '70%' : '80%'}
 		/>
 	{/if}
 	{#if currentActivityDockStatus === 'active'}
@@ -294,6 +320,15 @@
 		/>
 		<Button
 			onClick={() => {
+				// if ($RTC.publish) {
+				// 	$RTC.publish(
+				// 		localStorage.getItem('accountID'),
+				// 		JSON.stringify({
+				// 			currentActivityUpdate: 'null'
+				// 		})
+				// 	);
+				// }
+
 				tasksLog.update((old) => {
 					return [
 						...old,
@@ -307,9 +342,13 @@
 				localStorage.setItem('currentActivity', 'null');
 				currentActivity.set(null);
 			}}
+			onSelect={() => {
+				isColorBoxBeingShown = true;
+			}}
 			width="90%"
 			height="22%"
 			label="Done"
+			desktopFont={$globalStyle.mediumDesktopFont}
 			hoverOpacityMin={0}
 			hoverOpacityMax={20}
 			left="5%"
@@ -317,6 +356,20 @@
 		/>
 	{/if}
 </Box>
+<Button
+	transitions={getTransition(5)}
+	onClick={() => {
+		activeApp.set('menu');
+	}}
+	figmaImport={{
+		mobile: { top: 533, left: '50%', width: 350, height: 40 },
+		desktop: { top: 390, left: 793, height: 300, width: 334 }
+	}}
+	label="Switch App"
+	hoverOpacityMin={0}
+	hoverOpacityMax={20}
+	horizontalCenter={true}
+/>
 <!-- <Box
 	transitions={{
 		in: {
@@ -338,64 +391,77 @@
 	<Box
 		style="z-index: 50;"
 		figmaImport={{
-			mobile: { top: 25, width: '100%', height: '95%', left: '0%' }
+			mobile: { top: 25, width: '100%', height: '95%', left: '0%' },
+			desktop: { top: 25, width: '100%', height: '95%', left: '0%' }
 		}}
 		backgroundColor="#000000CC"
 		backdropFilter="blur(5px)"
 	/>
 	<Box
 		style="border-bottom: solid 1px {$globalStyle.activeColor}; z-index: 52;"
-		figmaImport={{ mobile: { top: 34, width: 350, height: 532, left: '50%' } }}
+		figmaImport={{
+			mobile: { top: 68, width: 350, height: 498, left: '50%' },
+			desktop: { top: 68, left: '50%', width: '30%', height: '100%' }
+		}}
 		horizontalCenter={true}
 		><ul class="tasksList">
-			{#each $tasks as task, ix}
-				<ListItem width="99%" height="8%" style="margin-bottom: 3%; margin-top: 0.5%;">
-					<Box
+			{#each $tasks.filter((elm) => (elm.active === true && taskPickerSearchInput !== '' ? elm.name
+							.toLowerCase()
+							.includes(taskPickerSearchInput.toLowerCase()) : true)) as task, ix (task.id)}
+				<ListItem
+					width="99%"
+					height={isMobile() ? '8%' : '6%'}
+					style="margin-bottom: 3%; margin-top: 0.5%;"
+				>
+					<Button
+						transitions={getTransition(ix, 20)}
+						onClick={() => {
+							const currentActivityPayload = { taskID: task.id, taskStartUnix: Date.now() };
+							currentActivity.set(currentActivityPayload);
+							taskPickerSearchInput = '';
+							if ($RTC.publish !== undefined) {
+								// $RTC.publish(
+								// 	localStorage.getItem('accountID'),
+								// 	JSON.stringify({
+								// 		currentActivityUpdate: currentActivityPayload
+								// 	})
+								// );
+							}
+
+							taskPickingMode = false;
+						}}
 						width="100%"
 						height="100%"
-						transitions={{
-							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
-						}}
-					>
-						<Button
-							onClick={() => {
-								currentActivity.set({ taskID: task.id, taskStartUnix: Date.now() });
-								taskPickingMode = false;
-							}}
-							width="99%"
-							height="99%"
-							hoverOpacityMin={0}
-							hoverOpacityMax={20}
-							transitions={{
-								in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
-							}}
-						>
-							<Label
-								width="70%"
-								height="50%"
-								left="2%"
-								style="text-align: start; justify-content: start;"
-								color={$globalStyle.activeMono}
-								text={task.name}
-							/>
-							<Label
-								backgroundColor="{$globalStyle.activeColor}20"
-								width="25%"
-								height="50%"
-								color={$globalStyle.activeMono}
-								text={$categories.find((cat) => cat.id === task.categoryID)?.name}
-								style="right: 2%;"
-								borderRadius="3px"
-							/>
-						</Button>
-					</Box>
+						label={task.name}
+						style="text-align: start; justify-content: start; padding-left: 2%;"
+						hoverOpacityMin={0}
+						desktopFont={$globalStyle.mediumDesktopFont}
+						hoverOpacityMax={20}
+					/>
 				</ListItem>
 			{/each}
-		</ul></Box
+		</ul>
+		<Box
+			transitions={getTransition(1)}
+			horizontalCenter={true}
+			figmaImport={{ mobile: { top: -50, left: '49.5%', width: 360, height: 40 } }}
+		>
+			<Input
+				bind:value={taskPickerSearchInput}
+				width="99%"
+				style="padding-left: 12%;"
+				height="100%"
+				verticalFont={$globalStyle.mediumMobileFont}
+				borderColor={$globalStyle.activeColor}
+			/>
+			<SearchDeco left="2%" width="10%" height="60%" />
+		</Box></Box
 	>
+
 	<Button
 		onClick={() => {
 			taskPickingMode = false;
+			taskPickerSearchInput = '';
 		}}
 		label="Back"
 		color={$globalStyle.secondaryMono}
@@ -408,3 +474,12 @@
 		horizontalCenter={true}
 	/>
 {/if}
+
+{#if isColorBoxBeingShown}
+	<ColorBox encryptedObjStr={localStorage.getItem('encryptedOfflineCache')} />
+{/if}
+<svelte:window
+	on:click={() => {
+		isColorBoxBeingShown = false;
+	}}
+/>

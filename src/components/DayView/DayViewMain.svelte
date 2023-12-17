@@ -16,6 +16,9 @@
 		tasksLog
 	} from '../../stores/dayViewSelectedDay';
 	import MenuBar from '../MenuBar.svelte';
+	import isMobile from '../../fn/isMobile';
+	import { datePadding } from '../../fn/datePadding';
+	import timePadding from '../../fn/timePadding';
 
 	$: colorHash = {
 		success: $globalStyle.successColor,
@@ -25,6 +28,19 @@
 		true: $globalStyle.successColor,
 		false: $globalStyle.errorColor
 	};
+
+	function getDateTimeDisplayInfo(noteTX) {
+		let date = new Date(noteTX);
+		let displayDate = `${datePadding(parseFloat(date.getDate()) + 1)}-${datePadding(
+			date.getMonth()
+		)}-${date.getFullYear()}`;
+
+		let displayTime = `${timePadding(date.getHours())}:${timePadding(
+			date.getMinutes()
+		)}:${timePadding(date.getSeconds())}`;
+
+		return { displayDate: displayDate, displayTime: displayTime };
+	}
 
 	function getRoutineLabelColor(routine) {
 		if ($dayViewSelectedDay.status === 'pending') {
@@ -130,11 +146,18 @@
 
 <Box
 	style="border-bottom: solid 1px {$globalStyle.activeColor}"
-	figmaImport={{ mobile: { top: 73 + topOffset, width: width, height: 300, left: '50%' } }}
+	figmaImport={{
+		mobile: { top: 73 + topOffset, width: width, height: 300, left: '50%' },
+		desktop: { top: 70, width: 500, height: '80%', left: '50%' }
+	}}
 	horizontalCenter={true}
 	><ul class="tasksList">
 		{#if dayTasks.length === 0}
-			<ListItem width="99%" height="15%" style="margin-bottom: 3%; margin-top: 2%;">
+			<ListItem
+				width="99%"
+				height={isMobile() ? '15%' : '2%'}
+				style="margin-bottom: 3%; margin-top: 2%;"
+			>
 				<Box
 					width="99%"
 					height="99%"
@@ -144,17 +167,22 @@
 			>
 		{/if}
 		{#each dayTasks as task, ix}
-			<ListItem width="99%" height="15%" style="margin-bottom: 3%; margin-top: 0.5%;">
+			<ListItem
+				width="99%"
+				height={isMobile() ? '15%' : '7%'}
+				style="margin-bottom: 3%; margin-top: 0.5%;"
+			>
 				<Box
 					width="99%"
 					height="99%"
 					style="border: solid 1px {$globalStyle.activeColor};"
-					transitions={{ in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } } }}
+					transitions={{ in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } } }}
 				>
 					<Label
 						left="0%"
 						text={$tasks.find((elm) => elm.id === task.taskID)?.name}
 						color={$globalStyle.activeMono}
+						desktopFont={$globalStyle.mediumDesktopFont}
 						style="padding-left: 2%; padding-right: 2%;"
 					/>
 					<Label
@@ -163,6 +191,7 @@
 						text={task.category}
 						style="right: 2%;"
 						backgroundColor="{$globalStyle.activeColor}20"
+						desktopFont={$globalStyle.mediumDesktopFont}
 						color={$globalStyle.activeColor}
 						borderRadius="3px"
 					/>
@@ -174,6 +203,7 @@
 						text="{getTime(task.taskStartUnix)}-{getTime(task.taskEndUnix)}"
 						backgroundColor="{$globalStyle.activeColor}20"
 						color={$globalStyle.activeColor}
+						desktopFont={$globalStyle.mediumDesktopFont}
 						borderRadius="3px"
 					/>
 				</Box>
@@ -190,32 +220,40 @@
 	figmaImport={{ mobile: { top: 25 + topOffset, height: 40, width: width, left: '50%' } }}
 	horizontalCenter={true}
 >
-	<Label
-		width="12%"
-		height="100%"
-		left="0%"
-		backgroundColor="{colorHash[$dayViewSelectedDay.status]}30"
-		borderRadius="5px"
-		color={colorHash[$dayViewSelectedDay.status]}
-		style="border-top-right-radius: 0px; border-bottom-right-radius: 0px; border-right: solid 1px {colorHash[
-			$dayViewSelectedDay.status
-		]};"
-		text={dayHash[
-			new Date(
-				$dayViewSelectedDay.dayStartUnix ? $dayViewSelectedDay.dayStartUnix : Date.now()
-			).getDay()
-		]}
-	/>
-	<Label
-		width="25%"
-		height="50%"
-		left="18%"
-		text="Routine"
-		backgroundColor="{getRoutineLabelColor($dayViewSelectedDay.routine)}20"
-		color={getRoutineLabelColor($dayViewSelectedDay.routine)}
-		borderRadius="3px"
-	/>
+	{#if isMobile()}
+		<Label
+			width="12%"
+			height="100%"
+			left="0%"
+			backgroundColor="{colorHash[$dayViewSelectedDay.status]}30"
+			borderRadius="5px"
+			color={colorHash[$dayViewSelectedDay.status]}
+			style="border-top-right-radius: 0px; border-bottom-right-radius: 0px; border-right: solid 1px {colorHash[
+				$dayViewSelectedDay.status
+			]};"
+			text={dayHash[
+				new Date(
+					$dayViewSelectedDay.dayStartUnix ? $dayViewSelectedDay.dayStartUnix : Date.now()
+				).getDay()
+			]}
+		/>
+		<Label
+			width="25%"
+			height="50%"
+			left="18%"
+			text="Routine"
+			backgroundColor="{getRoutineLabelColor($dayViewSelectedDay.routine)}20"
+			color={getRoutineLabelColor($dayViewSelectedDay.routine)}
+			borderRadius="3px"
+		/>
+	{/if}
 </Box>
+<Label
+	desktopFont={$globalStyle.smallDesktopFont}
+	text={getDateTimeDisplayInfo($dayViewSelectedDay.dayStartUnix).displayDate}
+	figmaImport={{ desktop: { top: 25, left: '50%' } }}
+	horizontalCenter={true}
+/>
 
 <Box
 	style="border-top: solid 1px {$globalStyle.activeColor}"
@@ -284,7 +322,10 @@
 	backgroundColor={$globalStyle.secondaryMono}
 	hoverOpacityMin={0}
 	hoverOpacityMax={20}
-	figmaImport={{ mobile: { top: 582 + topOffset, left: '50%', width: width, height: 44 } }}
+	figmaImport={{
+		mobile: { top: 582 + topOffset, left: '50%', width: width, height: 44 },
+		desktop: { top: '90%', left: '50%', width: '15%', height: 60 }
+	}}
 	horizontalCenter={true}
 />
 

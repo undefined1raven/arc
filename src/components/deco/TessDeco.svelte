@@ -180,6 +180,7 @@
 </svg>
 
 <style>
+	path,
 	rect,
 	circle {
 		transition: all linear 0.4s;

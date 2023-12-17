@@ -6,11 +6,9 @@
 	let renderedComponent;
 
 	onMount(() => {
-		if (isMobile()) {
-			renderedComponent = new LoginMain({
-				target: document.documentElement
-			});
-		}
+		renderedComponent = new LoginMain({
+			target: document.documentElement
+		});
 	});
 
 	onDestroy(() => {

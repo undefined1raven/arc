@@ -1,14 +1,17 @@
 <script>
 	import { onMount } from 'svelte';
-	import isMobile from '../../fn/isMobile.ts';
+
 	import { RangeScaler } from '../../fn/RangeScaler.js';
 	import screenSize from '../../stores/screenSize';
 	import GlobalStyles from '../../config/GlobalStyles';
 	import FigmaImporter from '../../fn/figmaImporter.js';
 	import getFigmaImportConfig from '../../config/FigmaImportConfig';
 	import { createEventDispatcher } from 'svelte';
+	import isMobile from '../../fn/isMobile';
+	import globalStyle from '../../stores/globalStyles.js';
+	import readTransitions from '../../fn/readTransitions.js';
 	const dispatch = createEventDispatcher();
-	let lglobalStyles = GlobalStyles();
+	let lglobalStyles = $globalStyle;
 
 	let id;
 	let isMouseHovering = false;
@@ -18,6 +21,7 @@
 	let borderColor;
 	let backgroundColor = lglobalStyles.activeColor;
 	let onClick;
+	let transitions = {};
 	let onTouchStart;
 	let onTouchEnd;
 	let width;
@@ -31,6 +35,11 @@
 	let horizontalFont;
 	let verticalFont = lglobalStyles.regularMobileFont;
 	let opacity;
+	let paddingRight = '0%';
+	let paddingLeft = '0%';
+	let paddingTop = '0%';
+	let paddingBottom = '0%';
+	let padding;
 	let backdropFilter;
 	let borderRadius = lglobalStyles.borderRadius;
 	let defaultValue = '';
@@ -86,6 +95,8 @@
 			return mobilePosition;
 		}
 	}
+
+	const { inFunc, inOptions, outFunc, outOptions } = readTransitions(transitions);
 
 	function fontController() {
 		if (isMobile() == true) {
@@ -148,6 +159,11 @@
 		onTouchEnd,
 		show,
 		tabletWidth,
+		paddingRight,
+		paddingLeft,
+		paddingTop,
+		paddingBottom,
+		padding,
 		desktopFont,
 		fontType,
 		horizontalCenter,
@@ -156,6 +172,7 @@
 		figmaImport,
 		hoverOpacityMin,
 		hoverOpacityMax,
+		transitions,
 		autofocus,
 		placeholder,
 		readonly
@@ -165,6 +182,8 @@
 <svelte:window on:resize={onResize} />
 {#if show}
 	<input
+		in:inFunc={inOptions}
+		out:outFunc={outOptions}
 		{readonly}
 		{placeholder}
 		autofocus={isMobile() ? false : autofocus}
@@ -178,7 +197,7 @@
 		class={`input ${className ? className : ''}`}
 		style="
     opacity: {iu(opacity, '1')}; 
-	font-family: {fontType == 'soft' ? "'Raleway', sans-serif;" : "'Electrolize', sans-serif;"}
+	font-family: {fontType == 'soft' ? "'Oxanium', sans-serif;" : "'Oxanium', sans-serif;"}
     font-size: {iu(fontSize, '2vh')}; 
     left: {positionParser(iu(left, 'auto'), iu(tabletLeft, 'auto'))}; 
     top: {positionParser(iu(top, 'auto'), iu(tabletTop, 'auto'))}; 
@@ -205,6 +224,11 @@
 			'px;'}
     backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
     --webkit-backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
+	padding-right: {paddingRight};
+	padding-top: {paddingTop};
+	padding-bottom: {paddingBottom};
+	padding-left: {paddingLeft};
+	padding: {padding};
     {iu(style, '')}"
 		bind:value
 	/>

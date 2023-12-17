@@ -14,6 +14,12 @@
 	import SyncingDeco from '../components/deco/SyncingDeco.svelte';
 	import { appColors } from '../config/appColors';
 	import TessDeco from '../components/deco/TessDeco.svelte';
+	import SidDeco from '../components/deco/SIDDeco.svelte';
+	import { tessPIN } from '../stores/tessPIN';
+	import { onMount } from 'svelte';
+	import { SIDs } from '../components/SID/SIDVault';
+	import isMobile from '../fn/isMobile';
+	import StarDeco from '../components/deco/StarDeco.svelte';
 	touchMove.subscribe((tm) => {
 		let swipeDelta = $touchStart[0].clientX - tm[0].clientX;
 		let swipeDeltaY = $touchStart[0].clientY - tm[0].clientY;
@@ -32,17 +38,43 @@
 		});
 	}
 
+	onMount(() => {
+		setTimeout(() => {
+			document.documentElement.style.transition = 'background-color linear 0.1s';
+		}, 50);
+	});
+
+	const pageBackgroudMap = {
+		arc: '#010007',
+		sid: '#040007',
+		tess: '#010007',
+		star: 'linear-gradient(162deg, #03000A 4.7%, #050313 15.9%, #080313 38.7%, #07000E 59.05%, #03000A 100.06%)'
+	};
+
 	activeApp.subscribe((aa) => {
 		switch (aa) {
 			case 'tess':
 				globalStyleOverride(appColors.tess);
+				document.documentElement.style.background = pageBackgroudMap.tess;
 				break;
 			case 'arc':
 				globalStyleOverride(appColors.arc);
+				document.documentElement.style.background = pageBackgroudMap.arc;
+				break;
 			case 'sid':
 				globalStyleOverride(appColors.sid);
+				document.documentElement.style.background = pageBackgroudMap.sid;
+				break;
+			case 'star':
+				globalStyleOverride(appColors.star);
+				document.documentElement.style.background = pageBackgroudMap.star;
+				document.documentElement.style.backgroundRepeat = 'no-repeat';
+				document.documentElement.style.backgroundAttachment = 'fixed';
+				break;
+
 			default:
 				globalStyleOverride(appColors.arc);
+				document.documentElement.style.background = pageBackgroudMap.arc;
 				break;
 		}
 	});
@@ -61,7 +93,7 @@
 	}}
 />
 {#if window.location.pathname !== '/login' && window.location.pathname !== '/create'}
-	{#if $updateLabel === '[Syncing]'}
+	{#if $updateLabel === '[Syncing]' && isMobile() === true}
 		<Box
 			width="100%"
 			height="95%"
@@ -81,8 +113,14 @@
 		{#if $activeApp === 'arc'}
 			<Logo top="10%" width="100%" height="90%" left="0%" color={$globalStyle.activeColor} />
 		{/if}
+		{#if $activeApp === 'sid'}
+			<SidDeco width="20%" height="100%" />
+		{/if}
 		{#if $activeApp === 'tess'}
 			<TessDeco width="20%" height="100%" />
+		{/if}
+		{#if $activeApp === 'star'}
+			<StarDeco color={$globalStyle.activeMono} width="20%" height="100%" />
 		{/if}
 		{#if $activeApp === 'menu'}
 			<Label
@@ -101,7 +139,7 @@
 		/>
 		<NetworkIndicator />
 		<KeysIndicator />
-		{#if $updateLabel !== 'none'}
+		<!-- {#if $updateLabel !== 'none'}
 			<div out:fade={{ duration: 200 }}>
 				<Box
 					transitions={{
@@ -126,6 +164,6 @@
 					/>
 				</Box>
 			</div>
-		{/if}
+		{/if} -->
 	</Box>
 {/if}

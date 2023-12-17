@@ -60,7 +60,7 @@
 			}
 		});
 	});
-	var lglobalStyles = GlobalStyles();
+	let lglobalStyles = $globalStyle;
 	var selectedIndex = 0;
 	let displayLabelForceUpdate = true;
 	let showDescription = true;

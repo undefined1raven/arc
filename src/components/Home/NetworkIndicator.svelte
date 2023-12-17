@@ -5,6 +5,7 @@
 	import { isOnline } from '../../stores/online';
 	import NetworkDeco from '../deco/NetworkDeco.svelte';
 	import { getDynamicBorderRadius } from '../../fn/dynamicBorders';
+	import { updateLabel } from '../../stores/updateLabel';
 
 	const colorsHash = {
 		'0': $globalStyle.errorColor,
@@ -23,5 +24,10 @@
 	backgroundColor="{colorsHash[$isOnline.toString()]}20"
 	style="right: 0%; border-bottom-right-radius: 0px; border-top-right-radius: 0px;"
 	borderRadius={getDynamicBorderRadius(1)}
-	><NetworkDeco color={colorsHash[$isOnline.toString()]} width="80%" height="80%" /></Box
+	><NetworkDeco
+		color={colorsHash[$isOnline.toString()]}
+		blinking={$updateLabel === '[Updating]' || $updateLabel === '[Syncing]' ? true : false}
+		width="80%"
+		height="80%"
+	/></Box
 >

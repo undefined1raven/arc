@@ -26,13 +26,14 @@
 	let height;
 	let top;
 	let tabletTop;
+	let align = 'center';
 	let tabletLeft;
 	let left;
 	let horizontalFont;
 	let verticalFont = lglobalStyles.regularMobileFont;
 	let opacity;
 	let backdropFilter;
-	let borderRadius;
+	let borderRadius = $globalStyle.borderRadius;
 	let show = true;
 	let tabletWidth;
 	let desktopFont = lglobalStyles.regularDesktopFont;
@@ -42,8 +43,10 @@
 	let transitions = {};
 	let slotClassName = '';
 	let figmaImportConfig = { ...getFigmaImportConfig() };
-
+	let alignPadding = '0%';
 	let figmaImport = {};
+
+	const alignToPadding = { start: 'left', end: 'right' };
 
 	const root = document.documentElement;
 	let fontSize = '2.4vh';
@@ -124,6 +127,7 @@
 		backgroundColor,
 		width,
 		height,
+		alignPadding,
 		top,
 		left,
 		horizontalFont,
@@ -134,6 +138,7 @@
 		tabletTop,
 		backdropFilter,
 		borderRadius,
+		align,
 		onTouchStart,
 		onTouchEnd,
 		show,
@@ -152,6 +157,8 @@
 <svelte:window on:resize={onResize} />
 {#if show && rendered}
 	<div
+		in:inFunc={inOptions}
+		out:outFunc={outOptions}
 		{id}
 		on:touchstart={onTouchStart}
 		on:touchend={onTouchEnd}
@@ -159,7 +166,8 @@
 		class={`label ${className ? className : ''}`}
 		style="
     opacity: {iu(opacity, '1')}; 
-	font-family: {fontType == 'soft' ? "'Raleway', sans-serif;" : "'Electrolize', sans-serif;"}
+	letter-spacing: 0.1vh;
+	font-family: {fontType == 'soft' ? "'Oxanium', sans-serif;" : "'Oxanium', sans-serif;"}
     font-size: {iu(fontSize, '2vh')}; 
     left: {positionParser(iu(left, 'auto'), iu(tabletLeft, 'auto'))}; 
     top: {positionParser(iu(top, 'auto'), iu(tabletTop, 'auto'))}; 
@@ -169,6 +177,8 @@
 	{Object.keys(figmaImport).length > 0 ? FigmaImporter(figmaImport, figmaImportConfig) : ''} 
     background-color: {iu(backgroundColor, '#2400FF00')};
 	border: solid 1px {iu(borderColor, '#FFFFFF00')};
+	justify-content: {align};
+	text-align: {align};
 	{horizontalCenter || verticalCenter
 			? `transform: translateX(${horizontalCenter == true ? '-50%' : '0px'}) translateY(${
 					verticalCenter == true ? '-50%' : '0px'
@@ -184,6 +194,7 @@
 			'px;'}
     --webkit-backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
     backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
+	padding-{alignToPadding[align]}: {alignPadding};
     {style}"
 	>
 		{text ? text : ''}

@@ -7,8 +7,10 @@
 	import FigmaImporter from '../../fn/figmaImporter.js';
 	import getFigmaImportConfig from '../../config/FigmaImportConfig.js';
 	import { createEventDispatcher } from 'svelte';
+	import globalStyle from '../../stores/globalStyles';
+	import readTransitions from '../../fn/readTransitions.js';
 	const dispatch = createEventDispatcher();
-	let lglobalStyles = GlobalStyles();
+	let lglobalStyles = $globalStyle;
 
 	let id;
 	let isMouseHovering = false;
@@ -21,6 +23,11 @@
 	let onTouchStart;
 	let onTouchEnd;
 	let width;
+	let paddingRight = '0%';
+	let paddingLeft = '0%';
+	let paddingTop = '0%';
+	let paddingBottom = '0%';
+	let padding;
 	let height;
 	let top;
 	let tabletTop;
@@ -28,6 +35,7 @@
 	let hoverOpacityMin = 20;
 	let hoverOpacityMax = 40;
 	let left;
+	let transitions = {};
 	let horizontalFont;
 	let verticalFont = lglobalStyles.regularMobileFont;
 	let opacity;
@@ -122,6 +130,8 @@
 		}
 	}
 
+	const { inFunc, inOptions, outFunc, outOptions } = readTransitions(transitions);
+
 	export {
 		id,
 		onClick,
@@ -149,6 +159,11 @@
 		tabletWidth,
 		desktopFont,
 		fontType,
+		paddingRight,
+		paddingLeft,
+		paddingTop,
+		paddingBottom,
+		padding,
 		horizontalCenter,
 		verticalCenter,
 		figmaImportConfig,
@@ -156,6 +171,7 @@
 		hoverOpacityMin,
 		hoverOpacityMax,
 		autofocus,
+		transitions,
 		placeholder
 	};
 </script>
@@ -163,6 +179,8 @@
 <svelte:window on:resize={onResize} />
 {#if show}
 	<textarea
+		in:inFunc={inOptions}
+		out:outFunc={outOptions}
 		{placeholder}
 		{id}
 		on:touchstart={onTouchStart}
@@ -173,7 +191,7 @@
 		class={`textarea ${className ? className : ''}`}
 		style="
     opacity: {iu(opacity, '1')}; 
-	font-family: {fontType == 'soft' ? "'Raleway', sans-serif;" : "'Electrolize', sans-serif;"}
+	font-family: {fontType == 'soft' ? "'Oxanium', sans-serif;" : "'Oxanium', sans-serif;"}
     font-size: {iu(fontSize, '2vh')}; 
     left: {positionParser(iu(left, 'auto'), iu(tabletLeft, 'auto'))}; 
     top: {positionParser(iu(top, 'auto'), iu(tabletTop, 'auto'))}; 
@@ -200,6 +218,11 @@
 			'px;'}
     backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
     --webkit-backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
+	padding-right: {paddingRight};
+	padding-top: {paddingTop};
+	padding-bottom: {paddingBottom};
+	padding-left: {paddingLeft};
+	padding: {padding};
     {iu(style, '')}"
 		bind:value
 	/>

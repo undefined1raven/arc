@@ -25,6 +25,7 @@
 		categories,
 		dayViewSelectedDay,
 		days,
+		imported,
 		tasks,
 		tasksLog
 	} from '../../stores/dayViewSelectedDay';
@@ -41,10 +42,21 @@
 	import NetworkIndicator from './NetworkIndicator.svelte';
 	import { touchEnd, touchStart, touchMove } from '../../stores/touchGestures';
 	import { keysStatus } from '../../stores/keysStatus';
+	import { activeApp } from '../../stores/activeApp';
+	import ColorBox from '../common/ColorBox.svelte';
 
+	let isColorBoxBeingShown = false;
 	let rendered = false;
-
-	const validPaths = ['#home', '#dayView', '#logs', '#edit', '#settings', '#stats'];
+	let leo = '';
+	const validPaths = [
+		'#home',
+		'#dayView',
+		'#logs',
+		'#edit',
+		'#settings',
+		'#stats',
+		'#EX7currentDay'
+	];
 
 	const hashToComponent = {
 		'#home': HomeActual,
@@ -56,6 +68,7 @@
 	};
 
 	async function processEncrypted(encryptedObj, key, allowUpdatesValue) {
+		leo = JSON.stringify(encryptedObj);
 		const encrypted = encryptedObj;
 		await symmetricDecrypt(encrypted.categories.cipher, key, encrypted.categories.iv).then(
 			(decrypted) => {
@@ -179,8 +192,9 @@
 					return days;
 				});
 			}
-		}, 1000);
+		}, 30000);
 
+		imported.set(true);
 		allowUpdates.set(allowUpdatesValue);
 		updateLabel.set('none');
 	}
@@ -194,19 +208,12 @@
 			importSymmetricKey(JSON.parse(localStorage.getItem('simkey')))
 				.then((key) => {
 					keysStatus.set(1);
-					if (localStorage.getItem('accountID') === null) {
-						window.location.href = '/login';
-					}
 					const cache = JSON.parse(localStorage.getItem('encryptedOfflineCache'));
 					if (cache !== null) {
 						processEncrypted(cache, key, false);
 					}
 					fetch(domainGetter('/account/latest'), {
-						method: 'POST',
-						body: JSON.stringify({
-							accountID: localStorage.getItem('accountID'),
-							at: localStorage.getItem('at')
-						}),
+						method: 'GET',
 						credentials: 'include'
 					})
 						.then((res) => {
@@ -233,6 +240,7 @@
 												processEncrypted(responseData.encrypted, key, true);
 											}
 										} catch (e) {
+											console.log(e);
 											localStorage.setItem(
 												'encryptedOfflineCache',
 												JSON.stringify(responseData.encrypted)
@@ -278,7 +286,7 @@
 		if (wh === '#dayView' && Object.keys($dayViewSelectedDay).length === 0) {
 			// window.location.hash = 'home';
 		}
-		if (validPaths.indexOf(wh) === -1) {
+		if (validPaths.indexOf(wh) === -1 && $activeApp === 'arc') {
 			window.location.hash = 'home';
 		}
 	});

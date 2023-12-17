@@ -47,7 +47,7 @@
 					width="100%"
 					height="100%"
 					transitions={{
-						in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
+						in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } }
 					}}
 				>
 					<Input
@@ -59,7 +59,7 @@
 						bind:value={category.name}
 						style="padding-left: 1%; border: solid 1px {$globalStyle.activeColor}00;"
 						transitions={{
-							in: { func: fly, options: { delay: ix * 80, duration: 200, y: '-4%' } }
+							in: { func: fly, options: { delay: ix * 40, duration: 200, y: '-4%' } }
 						}}
 					/>
 					<Button

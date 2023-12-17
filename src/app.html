@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" style="background-color: #010007; font-family: 'Titillium Web', sans-serif; overflow: hidden;">
+<html lang="en" style="font-family: 'Titillium Web', sans-serif; overflow: hidden;">
 
 <head>
 	<meta charset="utf-8" />
@@ -8,10 +8,11 @@
 	<link rel="manifest" crossorigin="use-credentials" href="manifest.json" />
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Titillium+Web&display=swap" rel="stylesheet">
-	<link href="https://fonts.googleapis.com/css2?family=Electrolize&family=Raleway&display=swap" rel="stylesheet">
+	<script async src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+	<link href="https://fonts.googleapis.com/css2?family=Oxanium&display=swap" rel="stylesheet">
 	<meta name="theme-color" content="#000000" />
 	<link rel="apple-touch-icon" href="icon.png">
+	<script src="./hashCheckerWorker.js" type="module"></script>
 	<title>CIC</title>
 	%sveltekit.head%
 </head>
@@ -35,6 +36,10 @@
 	}
 
 	ul::-webkit-scrollbar {
+		display: none;
+	}
+
+	input::-webkit-scrollbar {
 		display: none;
 	}
 

@@ -31,9 +31,11 @@
 	let onClick;
 	let mouseLeave;
 	let mouseEnter;
+	let onSelected;
 	let borderRadius = lglobalStyle.borderRadius;
 	let lscreenSize = $screenSize;
 	let toolTipText = '';
+	let borderColor = '#00000000';
 	let transitions = {};
 	let backdropFilter = '';
 	screenSize.subscribe((ss) => {
@@ -63,11 +65,13 @@
 		width,
 		height,
 		top,
+		onSelected,
 		left,
 		backgroundColor,
 		borderRadius,
 		mouseEnter,
 		mouseLeave,
+		borderColor,
 		toolTipText,
 		transitions,
 		backdropFilter
@@ -92,6 +96,12 @@
 			}
 			if (mouseEnter !== undefined) {
 				mouseEnter.call();
+			}
+		}}
+		on:contextmenu={(e) => {
+			e.preventDefault();
+			if (onSelected !== undefined) {
+				onSelected.call();
 			}
 		}}
 		on:mouseleave={() => {
@@ -126,6 +136,7 @@
 			100) *
 			lscreenSize.height +
 			'px;'};
+			border: solid 1px {iu(borderColor, '#0500FF')};
 			backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
 			--webkit-backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
 			

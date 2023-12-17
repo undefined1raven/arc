@@ -31,6 +31,8 @@
 	let onClick;
 	let mouseLeave;
 	let mouseEnter;
+	let marginTop;
+	let marginBottom;
 	let borderRadius = lglobalStyle.borderRadius;
 	let lscreenSize = $screenSize;
 	let toolTipText = '';
@@ -61,6 +63,8 @@
 		flyProps,
 		width,
 		height,
+		marginTop,
+		marginBottom,
 		top,
 		left,
 		backgroundColor,
@@ -112,9 +116,10 @@
 			? `transform: translateX(${horizontalCenter == true ? '-50%' : '0px'}) translateY(${
 					verticalCenter == true ? '-50%' : '0px'
 			  });`
-			: ''}; background-color: {backgroundColor !== undefined
-			? backgroundColor
-			: '#FFFFFF00'}; border-radius: {((parseFloat(
+			: ''}; background-color: {backgroundColor !== undefined ? backgroundColor : '#FFFFFF00'};
+			margin-top: {iu(marginTop, '0%')};
+			margin-bottom: {iu(marginBottom, '0%')};
+			border-radius: {((parseFloat(
 			iu(borderRadius, '0px')
 				.toString()
 				.substring(0, iu(borderRadius, '0px').length - 2)

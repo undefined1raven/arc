@@ -56,3 +56,60 @@ export function importPublicKey(jwk) {
         ["encrypt"],
     );
 }
+
+
+
+function getKeyMaterial(password) {
+    const enc = new TextEncoder();
+    return window.crypto.subtle.importKey(
+        "raw",
+        enc.encode(password),
+        { name: "PBKDF2" },
+        false,
+        ["deriveBits", "deriveKey"]
+    );
+}
+
+
+/*
+Given some key material and some random salt
+derive an AES-KW key using PBKDF2.
+*/
+function getKey(keyMaterial, salt) {
+    return window.crypto.subtle.deriveKey(
+        {
+            "name": "PBKDF2",
+            salt: salt,
+            "iterations": 100000,
+            "hash": "SHA-256"
+        },
+        keyMaterial,
+        { "name": "AES-CBC", "length": 256 },
+        true,
+        ["wrapKey", "unwrapKey"]
+    );
+}
+
+
+export async function wrapCryptoKey(keyToWrap, password) {
+    // get the key encryption key
+    const keyMaterial = await getKeyMaterial(password);
+    let salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const wrappingKey = await getKey(keyMaterial, salt);
+    const iv = window.crypto.getRandomValues(new Uint8Array(16));
+    const wrappedKey = await window.crypto.subtle.wrapKey(
+        "raw",
+        keyToWrap,
+        wrappingKey,
+        { name: "AES-CBC", iv: iv }
+    );
+
+    return { wrappedKey: wrappedKey, salt: salt, iv: iv };
+}
+
+
+export async function unwrapKey(wrappedKey, password, salt, iv) {
+    const keyMaterial = await getKeyMaterial(password);
+    const unwrappingKey = await getKey(keyMaterial, salt);
+    return window.crypto.subtle.unwrapKey('raw', wrappedKey, unwrappingKey, { name: 'AES-CBC', iv: iv }, { 'name': 'AES-GCM' }, true, ['encrypt', 'decrypt']);
+}
