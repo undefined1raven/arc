@@ -1,0 +1,100 @@
+<script lang="ts">
+	import { fly } from 'svelte/transition';
+	import Button from '../common/Button.svelte';
+	import Label from '../common/Label.svelte';
+	import { getTransition } from '../../fn/getTransisitions';
+	import DataExplorerMenuButton from './DataExplorerMenuButton.svelte';
+	import TimeFrameSelector from './TimeFrameSelector.svelte';
+	import TimeDeco from '../deco/TimeDeco.svelte';
+	import DataSelectionDeco from '../deco/DataSelectionDeco.svelte';
+	import ExploreDeco from '../deco/ExploreDeco.svelte';
+	import globalStyle from '../../stores/globalStyles';
+	import getDateFromUnix from '../../fn/getDateFromUnix';
+
+	let displayedStage = 'timeFrameSelector';
+	const displayedStageToComponent = {
+		timeFrameSelector: TimeFrameSelector,
+		dataSelector: Label,
+		explorer: Label
+	};
+	let selectedTimeFrame = { startUnix: 0, endUnix: 0 };
+</script>
+
+<svelte:component
+	this={displayedStageToComponent[displayedStage]}
+	on:onTimeframeSelection={(e) => {
+		console.log(e)
+		selectedTimeFrame = e.detail;
+	}}
+/>
+
+<DataExplorerMenuButton
+	transitionIndex={1}
+	decoComponent={TimeDeco}
+	left={12}
+	buttonLabel="Time Frame"
+	on:onSelectedDisplayStage={(e) => {
+		displayedStage = e.detail;
+	}}
+	isEnabled={displayedStage === 'timeFrameSelector'}
+	displayStageID={'timeFrameSelector'}
+/>
+<DataExplorerMenuButton
+	transitionIndex={2}
+	decoProps={{ width: '35%' }}
+	decoComponent={DataSelectionDeco}
+	left={129}
+	on:onSelectedDisplayStage={(e) => {
+		displayedStage = e.detail;
+	}}
+	buttonLabel="Data Selection"
+	isEnabled={displayedStage === 'dataSelector'}
+	displayStageID={'dataSelector'}
+/>
+<DataExplorerMenuButton
+	transitionIndex={3}
+	decoComponent={ExploreDeco}
+	left={246}
+	on:onSelectedDisplayStage={(e) => {
+		displayedStage = e.detail;
+	}}
+	buttonLabel="Explore"
+	isEnabled={displayedStage === 'explorer'}
+	displayStageID={'explorer'}
+/>
+
+<Button
+	transitions={{
+		in: {
+			func: fly,
+			options: { delay: 50, duration: 200, y: '15%' }
+		}
+	}}
+	hoverOpacityMin={0}
+	hoverOpacityMax={20}
+	label="Next"
+	horizontalCenter={true}
+	onClick={() => {
+		displayedStage = 'dataSelector';
+	}}
+	figmaImport={{ mobile: { top: 533, width: 350, left: '50%', height: 44 } }}
+/>
+
+<Button
+	transitions={{
+		in: {
+			func: fly,
+			options: { duration: 200, y: '15%' }
+		}
+	}}
+	hoverOpacityMin={0}
+	hoverOpacityMax={20}
+	color={$globalStyle.inactiveColor}
+	borderColor={$globalStyle.inactiveColor}
+	label="Back"
+	horizontalCenter={true}
+	onClick={() => {
+		window.location.hash = '#logs';
+	}}
+	figmaImport={{ mobile: { top: 589, width: 350, left: '50%', height: 44 } }}
+/>

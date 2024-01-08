@@ -16,6 +16,8 @@
 	import { fly } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import Textarea from '../common/Textarea.svelte';
+	import L5sDeco from '../deco/L5sDeco.svelte';
+	import LAttributesEditor from './LAttributesEditor.svelte';
 
 	let currentDate = new Date($selectedDayObj.tx);
 	let displayDate =
@@ -39,6 +41,8 @@
 			window.location.hash = 'home';
 		}
 	});
+
+	$: console.log($selectedDayObj)
 
 	$: restorable = Date.now() - $selectedDayObj.tx < 1000 * 60 * 60 * 24;
 </script>
@@ -78,7 +82,7 @@
 
 <Button
 	onClick={() => {
-		currentViewMode = currentViewMode === 'tasks' ? 'exfs' : 'tasks';
+		currentViewMode = 'tasks';
 	}}
 	label="Tasks"
 	hoverOpacityMin={currentViewMode === 'tasks' ? 20 : 0}
@@ -88,12 +92,12 @@
 		? $globalStyle.activeColor
 		: $globalStyle.secondaryColor}
 	transitions={getTransition(2)}
-	figmaImport={{ mobile: { top: 75, left: 5, width: 170, height: 36 } }}
+	figmaImport={{ mobile: { top: 75, left: 5, width: 110, height: 36 } }}
 />
 
 <Button
 	onClick={() => {
-		currentViewMode = currentViewMode === 'exfs' ? 'tasks' : 'exfs';
+		currentViewMode = 'exfs';
 	}}
 	hoverOpacityMin={currentViewMode === 'exfs' ? 20 : 0}
 	label="EXFs"
@@ -102,10 +106,25 @@
 	backgroundColor={currentViewMode === 'exfs'
 		? $globalStyle.activeColor
 		: $globalStyle.secondaryColor}
-	transitions={getTransition(2)}
-	figmaImport={{ mobile: { top: 75, left: 185, width: 170, height: 36 } }}
+	transitions={getTransition(3)}
+	figmaImport={{ mobile: { top: 75, left: 245, width: 110, height: 36 } }}
 />
 
+<Button
+	onClick={() => {
+		currentViewMode = 'L5s';
+	}}
+	hoverOpacityMin={currentViewMode === 'L5s' ? 20 : 0}
+	label=""
+	color={currentViewMode === 'L5s' ? $globalStyle.activeMono : $globalStyle.secondaryMono}
+	borderColor={currentViewMode === 'L5s' ? $globalStyle.activeColor : $globalStyle.secondaryColor}
+	backgroundColor={currentViewMode === 'L5s'
+		? $globalStyle.activeColor
+		: $globalStyle.secondaryColor}
+	transitions={getTransition(2)}
+	figmaImport={{ mobile: { top: 75, left: 125, width: 110, height: 36 } }}
+	><L5sDeco width="60%" height="50%" color={$globalStyle.activeColor} /></Button
+>
 {#if currentViewMode === 'tasks'}
 	<Box
 		style="border-bottom: solid 1px {$globalStyle.activeColor}; border-top: solid {$currentDay.tasks
@@ -176,6 +195,23 @@
 			{/each}
 		</List>
 	</Box>
+{/if}
+
+{#if currentViewMode === 'L5s'}
+	{#if $selectedDayObj.L5s !== undefined}
+		<LAttributesEditor readOnly={true} positions={$selectedDayObj.L5s} />
+	{:else}
+		<Label
+			horizontalCenter={true}
+			left="50%"
+			backgroundColor="{$globalStyle.activeColor}20"
+			borderRadius={$globalStyle.borderRadius}
+			text="No L5s to view"
+			top="20%"
+			width="80%"
+			height="7%"
+		/>
+	{/if}
 {/if}
 
 {#if currentViewMode === 'exfs'}

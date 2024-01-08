@@ -96,14 +96,12 @@
 									currentCache.tess.projects,
 									key
 								);
-								console.log(decryptedObj.results.projects);
 								if (decryptedObj.status === true && decryptedObj.results !== undefined) {
 									logs.set(decryptedObj.results.logs);
 									currentDay.set(decryptedObj.results.currentDay);
 									exfArray.set(decryptedObj.results.exfArray);
 									statusArray.set(decryptedObj.results.statusArray);
 									priorityArray.set(decryptedObj.results.priorityArray);
-									console.log(decryptedObj.results.projects);
 									projects.set(decryptedObj.results.projects);
 									isTessImported.set(true);
 								}

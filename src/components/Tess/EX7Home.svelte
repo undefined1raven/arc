@@ -24,6 +24,8 @@
 	}
 
 	let selectedDayIndex = -1;
+
+	$: console.log($logs)
 </script>
 
 <Box
@@ -37,7 +39,20 @@
 	onClick={() => {
 		window.location.hash = 'EX7currentDay';
 		if ($currentDay.active === false) {
-			currentDay.set({ tx: Date.now(), tasks: [], exfArray: [], active: true });
+			currentDay.set({
+				tx: Date.now(),
+				tasks: [],
+				exfArray: [],
+				active: true,
+				L5s: {
+					L0: { x: 0, y: 0, color: '#959595' },
+					L1: { x: 0, y: 0, color: '#608DFF' },
+					L2: { x: 0, y: 0, color: '#1400FF' },
+					L3: { x: 0, y: 0, color: '#712EFF' },
+					L4: { x: 0, y: 0, color: '#BD00FF' },
+					none: { x: 0, y: 0 }
+				}
+			});
 		}
 	}}
 	hoverOpacityMin={0}

@@ -9,6 +9,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import globalStyle from '../../stores/globalStyles';
 	import readTransitions from '../../fn/readTransitions';
+	import getDateFromUnix from '../../fn/getDateFromUnix';
 	const dispatch = createEventDispatcher();
 	let lglobalStyles = $globalStyle;
 
@@ -50,15 +51,23 @@
 	let figmaImport = {};
 	let autofocus = false;
 	let readonly = false;
-
+	let unixDefaultValue = undefined;
 	let passwordValue = '';
 	let passwordDisplayedValue = '';
 
 	function onValueChange(value) {
 		dispatch('onValue', value);
+		dispatch('onUnixValue', new Date(value).getTime());
+	}
+
+	function onUnixDefValueChange(unixDefaultValue) {
+		if (unixDefaultValue !== undefined && isNaN(parseInt(unixDefaultValue)) === false) {
+			value = getDateFromUnix(unixDefaultValue);
+		}
 	}
 
 	$: onValueChange(value);
+	$: onUnixDefValueChange(unixDefaultValue);
 
 	const root = document.documentElement;
 	let fontSize = '2.4vh';
@@ -164,7 +173,8 @@
 		hoverOpacityMax,
 		autofocus,
 		placeholder,
-		readonly
+		readonly,
+		unixDefaultValue
 	};
 </script>
 

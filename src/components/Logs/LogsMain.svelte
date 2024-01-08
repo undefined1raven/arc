@@ -81,7 +81,7 @@
 				</Box>
 			</ListItem>
 		{/if}
-		{#each $days as day, ix}
+		{#each $days.filter((elm) => Date.now() - elm.dayStartUnix < 1000 * 60 * 60 * 24 * 30) as day, ix}
 			<ListItem width="99%" height="8%" style="margin-bottom: 3%; margin-top: 0.5%;">
 				<Box
 					width="100%"
@@ -138,8 +138,20 @@
 	backgroundColor={$globalStyle.activeColor}
 	hoverOpacityMin={0}
 	hoverOpacityMax={20}
-	figmaImport={{ mobile: { top: 523 + topOffset, left: '50%', width: width, height: 44 } }}
-	horizontalCenter={true}
+	figmaImport={{ mobile: { top: 523 + topOffset, left: 5, width: 170, height: 44 } }}
+/>
+
+<Button
+	onClick={() => {
+		window.location.hash = 'dataExplorer';
+	}}
+	label="Data Explorer"
+	color={$globalStyle.activeMono}
+	borderColor={$globalStyle.activeColor}
+	backgroundColor={$globalStyle.activeColor}
+	hoverOpacityMin={0}
+	hoverOpacityMax={20}
+	figmaImport={{ mobile: { top: 523 + topOffset, left: 185, width: 170, height: 44 } }}
 />
 
 <MenuBar buttons={['edit', 'home', 'settings']} />

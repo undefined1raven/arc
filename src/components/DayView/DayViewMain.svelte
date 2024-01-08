@@ -314,7 +314,7 @@
 >
 <Button
 	onClick={() => {
-		window.location.hash = 'home';
+		window.location.hash = '#logs';
 	}}
 	label="Back"
 	color={$globalStyle.secondaryMono}

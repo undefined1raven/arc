@@ -44,6 +44,7 @@
 	import { keysStatus } from '../../stores/keysStatus';
 	import { activeApp } from '../../stores/activeApp';
 	import ColorBox from '../common/ColorBox.svelte';
+	import DataExplorerMain from '../DataExplorer/DataExplorerMain.svelte';
 
 	let isColorBoxBeingShown = false;
 	let rendered = false;
@@ -55,7 +56,8 @@
 		'#edit',
 		'#settings',
 		'#stats',
-		'#EX7currentDay'
+		'#EX7currentDay',
+		'#dataExplorer'
 	];
 
 	const hashToComponent = {
@@ -64,7 +66,8 @@
 		'#logs': LogsMain,
 		'#edit': EditMain,
 		'#settings': SettingsMain,
-		'#stats': StatsMain
+		'#stats': StatsMain,
+		'#dataExplorer': DataExplorerMain
 	};
 
 	async function processEncrypted(encryptedObj, key, allowUpdatesValue) {
@@ -187,10 +190,12 @@
 						dayObj['status'] = 'fail';
 					}
 				}
-				days.update((days) => {
-					days.push(dayObj);
-					return days;
-				});
+				if ($days.findIndex((elm) => elm.dayStartUnix === lowerBoundUnix) === -1) {
+					days.update((days) => {
+						days.push(dayObj);
+						return days;
+					});
+				}
 			}
 		}, 30000);
 

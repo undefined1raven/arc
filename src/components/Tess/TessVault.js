@@ -6,7 +6,15 @@ const currentDay = writable({
     tasks: [],
     exfArray: [],
     tx: 0,
-    active: false
+    active: false,
+    L5s: {
+        L0: { x: 0, y: 0, color: '#959595' },
+        L1: { x: 0, y: 0, color: '#608DFF' },
+        L2: { x: 0, y: 0, color: '#1400FF' },
+        L3: { x: 0, y: 0, color: '#712EFF' },
+        L4: { x: 0, y: 0, color: '#BD00FF' },
+        none: { x: 0, y: 0 }
+    }
 });
 
 const exfArray = writable([

@@ -48,8 +48,26 @@
 	let transitions = {};
 	let figmaImport = {};
 	let toolTipText = '';
+	let isSelected = undefined; // undefined by default for backward compatibiliy. use for single selection groups
 
 	let rendered = false;
+
+	function onIsSelectedChange(isSelected) {
+		if (isSelected !== undefined) {
+			if (isSelected === true) {
+				color = $globalStyle.activeMono;
+				borderColor = $globalStyle.activeColor;
+				backgroundColor = $globalStyle.activeColor;
+			} else {
+				color = $globalStyle.secondaryMono;
+				borderColor = $globalStyle.secondaryColor;
+				backgroundColor = $globalStyle.secondaryColor;
+			}
+		}
+	}
+
+	$: onIsSelectedChange(isSelected);
+
 	onMount(() => {
 		rendered = true;
 		fontController();
@@ -136,7 +154,8 @@
 		mouseLeave,
 		gradientBackground,
 		transitions,
-		toolTipText
+		toolTipText,
+		isSelected
 	};
 </script>
 

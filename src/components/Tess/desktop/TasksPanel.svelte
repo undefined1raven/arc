@@ -269,6 +269,7 @@
 			figmaImport={{ desktop: { top: 203, left: 18, width: 493, height: 141 } }}
 		>
 			<Textarea
+				className="overflowableInput"
 				on:onValue={(e) => {
 					updateTask('description', e.detail);
 				}}
@@ -400,3 +401,17 @@
 		}}
 	/>
 {/if}
+
+<style>
+	:global(.overflowableInput::-webkit-scrollbar-thumb) {
+		background-color: var(--activeColor) !important;
+		border-radius: var(--borderRadius);
+	}
+	:global(.overflowableInput::-webkit-scrollbar-track) {
+		border-radius: var(--borderRadius);
+	}
+	:global(.overflowableInput::-webkit-scrollbar) {
+		width: 0.8vh;
+	}
+
+</style>

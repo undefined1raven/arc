@@ -157,6 +157,12 @@
 			} else {
 				newColor = chartColors[Object.keys(categoryColors).length];
 			}
+			let isEnabledByDefault = false;
+			if (enabledCategories.length < 4) {
+				isEnabledByDefault = true;
+			} else {
+				isEnabledByDefault = false;
+			}
 			if (viewMode === 'byCategory') {
 				if (categoryColors[taskCategoryID] === undefined) {
 					categoryColors[taskCategoryID] = newColor;
@@ -165,19 +171,20 @@
 						{
 							id: taskCategoryID,
 							color: newColor,
-							enabled: true
+							enabled: isEnabledByDefault
 						}
 					];
 				}
 			} else if (viewMode === 'byTask') {
 				if (categoryColors[taskID] === undefined) {
 					categoryColors[taskID] = newColor;
+
 					enabledCategories = [
 						...enabledCategories,
 						{
 							id: taskID,
 							color: newColor,
-							enabled: true
+							enabled: isEnabledByDefault
 						}
 					];
 				}

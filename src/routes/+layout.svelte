@@ -20,10 +20,14 @@
 	import { SIDs } from '../components/SID/SIDVault';
 	import isMobile from '../fn/isMobile';
 	import StarDeco from '../components/deco/StarDeco.svelte';
+	import { allowMenuSwipe } from '../stores/allowMenuSwpite';
+	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
+
 	touchMove.subscribe((tm) => {
 		let swipeDelta = $touchStart[0].clientX - tm[0].clientX;
 		let swipeDeltaY = $touchStart[0].clientY - tm[0].clientY;
 		if (
+			$allowMenuSwipe === true &&
 			swipeDelta < 0 &&
 			Math.abs(swipeDelta) > 0.3 * $screenSize.width &&
 			Math.abs(swipeDeltaY) < 0.08 * $screenSize.height
@@ -37,6 +41,15 @@
 			return { ...gs, ...obj };
 		});
 	}
+
+	globalStyle.subscribe((gs) => {
+		let keys = Object.keys(gs);
+		for (let ix = 0; ix < keys.length; ix++) {
+			document.documentElement.style.setProperty(`--${keys[ix]}`, gs[keys[ix]]);
+		}
+	});
+
+	injectSpeedInsights();
 
 	onMount(() => {
 		setTimeout(() => {
