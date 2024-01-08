@@ -14,14 +14,15 @@
 	import DropdownDeco from '../deco/DropdownDeco.svelte';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import getDateFromUnix from '../../fn/getDateFromUnix';
-	const dispatch = createEventDispatcher();
+	import { dataExplorerParams } from './dataExplorerParams';
 	const dayMillis = 1000 * 60 * 60 * 24 * 1;
 	const weekMillis = 1000 * 60 * 60 * 24 * 7;
 	const monthMillis = 1000 * 60 * 60 * 24 * 30;
 
-	let selectedPreset = 'lastWeek'; // lastWeek | lastMonth | yesterday | custom
+	let selectedPreset = $dataExplorerParams.timeframe.preset; // lastWeek | lastMonth | yesterday | custom
 
-	let selectedTimeFrame = { startUnix: Date.now() - weekMillis, endUnix: Date.now() };
+	$: selectedTimeFrame = $dataExplorerParams.timeframe;
+
 	let isCustomPicking = false;
 
 	function onSelectedPresetChange(selectedPreset) {
@@ -42,15 +43,13 @@
 	}
 
 	function onSelectedTimeFrameChange(selectedTimeFrame) {
-		dispatch('onTimeframeSelection', selectedTimeFrame);
+		dataExplorerParams.update((prev) => {
+			prev['timeframe'] = { ...selectedTimeFrame, preset: selectedPreset };
+			return prev;
+		});
 	}
 
-	onMount(() => {
-		onSelectedPresetChange(selectedTimeFrame);
-	});
-
 	$: onSelectedTimeFrameChange(selectedTimeFrame);
-	$: onSelectedPresetChange(selectedPreset);
 
 	function getDisplayDateFromUnix(unix) {
 		const date = new Date(unix);
@@ -71,6 +70,7 @@
 	<Button
 		onClick={() => {
 			selectedPreset = 'yesterday';
+			onSelectedPresetChange(selectedPreset);
 		}}
 		transitions={getTransition(1)}
 		verticalFont={$globalStyle.mediumMobileFont}
@@ -84,6 +84,7 @@
 	<Button
 		onClick={() => {
 			selectedPreset = 'lastWeek';
+			onSelectedPresetChange(selectedPreset); //calling this fn manually instead of using $: to prevent the 'lastWeek' default from overriding the prev selection made by the user when changing the timeframe after the initial selection
 		}}
 		verticalFont={$globalStyle.mediumMobileFont}
 		transitions={getTransition(2)}
@@ -97,6 +98,7 @@
 	<Button
 		onClick={() => {
 			selectedPreset = 'lastMonth';
+			onSelectedPresetChange(selectedPreset);
 		}}
 		verticalFont={$globalStyle.mediumMobileFont}
 		hoverOpacityMin={0}
@@ -110,6 +112,7 @@
 	<Button
 		onClick={() => {
 			isCustomPicking = true;
+			onSelectedPresetChange(selectedPreset);
 			selectedPreset = 'custom';
 		}}
 		verticalFont={$globalStyle.mediumMobileFont}

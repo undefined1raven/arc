@@ -10,23 +10,20 @@
 	import ExploreDeco from '../deco/ExploreDeco.svelte';
 	import globalStyle from '../../stores/globalStyles';
 	import getDateFromUnix from '../../fn/getDateFromUnix';
+	import { dataExplorerParams } from './dataExplorerParams';
+	import DataSelector from './DataSelector.svelte';
 
 	let displayedStage = 'timeFrameSelector';
 	const displayedStageToComponent = {
 		timeFrameSelector: TimeFrameSelector,
-		dataSelector: Label,
+		dataSelector: DataSelector,
 		explorer: Label
 	};
-	let selectedTimeFrame = { startUnix: 0, endUnix: 0 };
+
+	$: selectedTimeFrame = $dataExplorerParams.timeframe;
 </script>
 
-<svelte:component
-	this={displayedStageToComponent[displayedStage]}
-	on:onTimeframeSelection={(e) => {
-		console.log(e)
-		selectedTimeFrame = e.detail;
-	}}
-/>
+<svelte:component this={displayedStageToComponent[displayedStage]} />
 
 <DataExplorerMenuButton
 	transitionIndex={1}
@@ -77,7 +74,7 @@
 	onClick={() => {
 		displayedStage = 'dataSelector';
 	}}
-	figmaImport={{ mobile: { top: 533, width: 350, left: '50%', height: 44 } }}
+	figmaImport={{ mobile: { top: 533, width: 336, left: '50%', height: 44 } }}
 />
 
 <Button
@@ -96,5 +93,5 @@
 	onClick={() => {
 		window.location.hash = '#logs';
 	}}
-	figmaImport={{ mobile: { top: 589, width: 350, left: '50%', height: 44 } }}
+	figmaImport={{ mobile: { top: 589, width: 336, left: '50%', height: 44 } }}
 />
