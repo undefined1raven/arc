@@ -46,7 +46,7 @@
 	let alignPadding = '0%';
 	let figmaImport = {};
 
-	const alignToPadding = { start: 'left', end: 'right' };
+	const alignToPadding = { start: 'left', end: 'right', right: 'right', left: 'left' };
 
 	const root = document.documentElement;
 	let fontSize = '2.4vh';

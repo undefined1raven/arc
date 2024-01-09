@@ -22,6 +22,7 @@
 	let onClick;
 	let onTouchStart;
 	let onTouchEnd;
+	let onScroll;
 	let width;
 	let height;
 	let top;
@@ -149,6 +150,7 @@
 		desktopFont,
 		fontType,
 		horizontalCenter,
+		onScroll,
 		verticalCenter,
 		figmaImportConfig,
 		figmaImport,
@@ -165,6 +167,7 @@
 		on:touchstart={onTouchStart}
 		on:touchend={onTouchEnd}
 		on:click={onClick}
+		on:scroll={onScroll}
 		class={`list ${className ? className : ''}`}
 		style="
     opacity: {iu(opacity, '1')}; 

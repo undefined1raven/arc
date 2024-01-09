@@ -12,12 +12,13 @@
 	import getDateFromUnix from '../../fn/getDateFromUnix';
 	import { dataExplorerParams } from './dataExplorerParams';
 	import DataSelector from './DataSelector.svelte';
+	import Explorer from './Explorer.svelte';
 
 	let displayedStage = 'timeFrameSelector';
 	const displayedStageToComponent = {
 		timeFrameSelector: TimeFrameSelector,
 		dataSelector: DataSelector,
-		explorer: Label
+		explorer: Explorer
 	};
 
 	$: selectedTimeFrame = $dataExplorerParams.timeframe;
@@ -60,22 +61,34 @@
 	displayStageID={'explorer'}
 />
 
-<Button
-	transitions={{
-		in: {
-			func: fly,
-			options: { delay: 50, duration: 200, y: '15%' }
-		}
-	}}
-	hoverOpacityMin={0}
-	hoverOpacityMax={20}
-	label="Next"
-	horizontalCenter={true}
-	onClick={() => {
-		displayedStage = 'dataSelector';
-	}}
-	figmaImport={{ mobile: { top: 533, width: 336, left: '50%', height: 44 } }}
-/>
+{#if displayedStage !== 'explorer'}
+	<Button
+		transitions={{
+			in: {
+				func: fly,
+				options: { delay: 50, duration: 200, y: '15%' }
+			}
+		}}
+		hoverOpacityMin={0}
+		hoverOpacityMax={20}
+		label="Next"
+		horizontalCenter={true}
+		onClick={() => {
+			switch (displayedStage) {
+				case 'timeFrameSelector':
+					displayedStage = 'dataSelector';
+					break;
+				case 'dataSelector':
+					displayedStage = 'explorer';
+					break;
+				default:
+					displayedStage = 'timeFrameSelector';
+					break;
+			}
+		}}
+		figmaImport={{ mobile: { top: 533, width: 336, left: '50%', height: 44 } }}
+	/>
+{/if}
 
 <Button
 	transitions={{

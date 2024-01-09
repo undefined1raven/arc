@@ -1,0 +1,481 @@
+<script lang="ts">
+	import Button from '../common/Button.svelte';
+	import Label from '../common/Label.svelte';
+	import { getTransition } from '../../fn/getTransisitions';
+	import globalStyle from '../../stores/globalStyles';
+	import Box from '../common/Box.svelte';
+	import { categories, tasks, tasksLog } from '../../stores/dayViewSelectedDay';
+	import List from '../common/List.svelte';
+	import ListItem from '../common/ListItem.svelte';
+	import { dataExplorerParams } from './dataExplorerParams';
+	import { onDestroy, onMount } from 'svelte';
+	import { allowMenuSwipe } from '../../stores/allowMenuSwpite';
+	import getDateFromUnix from '../../fn/getDateFromUnix';
+	import HorizontalLine from '../common/HorizontalLine.svelte';
+	import '@carbon/charts/styles.css';
+	import { HeatmapChart } from '@carbon/charts';
+	import VerticalLine from '../common/VerticalLine.svelte';
+
+	// const options = {
+	// 	title: 'Heatmap',
+	// 	axes: {
+	// 		bottom: {
+	// 			title: 'Letters',
+	// 			mapsTo: 'letter',
+	// 			scaleType: 'labels'
+	// 		},
+	// 		left: {
+	// 			title: 'Months',
+	// 			mapsTo: 'month',
+	// 			scaleType: 'labels'
+	// 		}
+	// 	},
+	// 	heatmap: {
+	// 		colorLegend: {
+	// 			title: 'Legend title'
+	// 		}
+	// 	},
+	// 	experimental: true,
+	// 	height: '400px'
+	// };
+
+	function getDataMembersNamesFromExplorerParams(explorerParams) {
+		let dataMemberNames = [];
+		for (let ix = 0; ix < explorerParams.selectedTaskIDs.length; ix++) {
+			const taskID = explorerParams.selectedTaskIDs[ix];
+			let taskName = $tasks.find((elm) => elm.id === taskID).name;
+			dataMemberNames.push({ name: taskName, id: taskID });
+		}
+		for (let ix = 0; ix < explorerParams.selectedCategoriesIDs.length; ix++) {
+			const categoryID = explorerParams.selectedCategoriesIDs[ix];
+			let categoryName = $categories.find((elm) => elm.id === categoryID).name;
+			dataMemberNames.push({ name: categoryName, id: categoryID });
+		}
+		return dataMemberNames;
+	}
+
+	$: dataMemberNames = getDataMembersNamesFromExplorerParams($dataExplorerParams);
+
+	onMount(() => {
+		allowMenuSwipe.set(false);
+	});
+
+	onDestroy(() => {
+		allowMenuSwipe.set(true);
+	});
+
+	let listDOMs = [];
+
+	let globalScrollLeft = 0;
+
+	function onGlobalScrollLeftChange(globalScrollLeft) {
+		for (let ix = 0; ix < listDOMs.length; ix++) {
+			if (listDOMs[ix].scrollLeft !== undefined) {
+				listDOMs[ix].scrollLeft = globalScrollLeft;
+			}
+		}
+	}
+
+	$: onGlobalScrollLeftChange(globalScrollLeft);
+
+	function getDisplayDateFromUnix(unix) {
+		const date = new Date(unix);
+		return `${date.getDate()} ${date.toLocaleString('default', { month: 'short' })}`;
+	}
+
+	const filteredTasks = $tasksLog.filter(
+		(elm) =>
+			$dataExplorerParams.selectedTaskIDs.indexOf(elm.taskID) !== -1 &&
+			elm.taskStartUnix > $dataExplorerParams.timeframe.startUnix &&
+			elm.taskStartUnix < $dataExplorerParams.timeframe.endUnix
+	);
+
+	let dailyBreakdownArray = {}; ///used for global stats (avg and totals)
+	let dailyNaNAppendedBreakdownArray = {}; ///used as an intermediary for daily grid display (adds NaN to the tasks that weren't logged in a day but are still part of the dataMembers)
+	let flatennedDailyNaNAppendedBreakdownArray = {}; /// used for the actual daily grid display
+	let durationTotalsByTask = {}; //global duration totals for each task
+	// let taskIDMonthPairs = [];
+
+	function getDailyBreakdownArray() {
+		for (let ix = 0; ix < filteredTasks.length; ix++) {
+			const task = filteredTasks[ix];
+			const taskID = task.taskID;
+			const taskStartUnix = task.taskStartUnix;
+			const taskDuration = task.taskEndUnix - taskStartUnix;
+
+			///add to daily breakdown array
+			if (dailyBreakdownArray[getDateFromUnix(taskStartUnix)] === undefined) {
+				dailyBreakdownArray[getDateFromUnix(taskStartUnix)] = [
+					{ taskID: taskID, duration: taskDuration }
+				];
+			} else {
+				dailyBreakdownArray[getDateFromUnix(taskStartUnix)] = [
+					...dailyBreakdownArray[getDateFromUnix(taskStartUnix)],
+					{ taskID: taskID, duration: taskDuration }
+				];
+			}
+
+			///add to duration totals array
+			if (durationTotalsByTask[taskID] === undefined) {
+				durationTotalsByTask[taskID] = taskDuration;
+			} else {
+				durationTotalsByTask[taskID] += taskDuration;
+			}
+
+			// ///beta heatmap
+			// const taskStartMonth = new Date(taskStartUnix).toLocaleString('default', { month: 'long' });
+			// const existingIndex = heatmapData.indexOf(
+			// 	(elm) => elm.letter === taskID && elm.month === taskStartMonth
+			// );
+
+			// if (
+			// 	taskIDMonthPairs.findIndex(
+			// 		(elm) => elm.month === taskStartMonth && elm.taskID === taskID
+			// 	) === -1
+			// ) {
+			// 	taskIDMonthPairs.push({ month: taskStartMonth, taskID: taskID });
+			// }
+			// if (existingIndex === -1) {
+			// 	heatmapData.push({
+			// 		letter: taskID,
+			// 		value: (taskDuration / 1000 / 60).toFixed(2),
+			// 		month: new Date(taskStartUnix).toLocaleString('default', { month: 'long' })
+			// 	});
+			// } else {
+			// 	const elm = heatmapData[existingIndex];
+			// 	heatmapData[existingIndex] = {
+			// 		...elm,
+			// 		duration: elm.value + (taskDuration / 1000 / 60).toFixed(2)
+			// 	};
+			// }
+		}
+	}
+
+	function getDailyNaNAppendedBreakdownArray(dailyBreakdownArray) {
+		const keys = Object.keys(dailyBreakdownArray);
+		for (let ix = 0; ix < keys.length; ix++) {
+			let dayTasksArray = dailyBreakdownArray[keys[ix]];
+			for (let ixx = 0; ixx < dataMemberNames.length; ixx++) {
+				if (dayTasksArray.findIndex((elm) => elm.taskID === dataMemberNames[ixx].id) === -1) {
+					dayTasksArray = [...dayTasksArray, { taskID: dataMemberNames[ixx].id, duration: NaN }];
+				}
+			}
+			dailyNaNAppendedBreakdownArray[keys[ix]] = dayTasksArray;
+		}
+	}
+
+	const daysInSelectedTimeframe = Math.ceil(
+		($dataExplorerParams.timeframe.endUnix - $dataExplorerParams.timeframe.startUnix) /
+			1000 /
+			60 /
+			60 /
+			24
+	);
+
+	// let heatmapData = [];
+	// const sortAlphaNum = (a, b) => a.localeCompare(b, 'en', { numeric: true });
+	// let data = [];
+
+	function flattenDailyNaNAppendedBreakdownArray(dayArray) {
+		/// uses a dayArray from the dailyBreakdownArray to get the total duration for each task in that day and returns to flattened dayArray
+		let map = {};
+		let out = [];
+		for (let ix = 0; ix < dayArray.length; ix++) {
+			const task = dayArray[ix];
+			if (isNaN(task.duration) === false) {
+				if (map[task.taskID] === undefined) {
+					map[task.taskID] = task.duration;
+				} else {
+					map[task.taskID] += task.duration;
+				}
+			} else {
+				map[task.taskID] = NaN;
+			}
+		}
+		const mapKeys = Object.keys(map);
+		for (let ix = 0; ix < mapKeys.length; ix++) {
+			out.push({ taskID: mapKeys[ix], duration: map[mapKeys[ix]] });
+		}
+		return out;
+	}
+
+	function flattenMapIntoArray(keyPropName, map) {
+		const mapKeys = Object.keys(map);
+		let outArray = [];
+		for (let ix = 0; ix < mapKeys.length; ix++) {
+			let obj = {};
+			obj[keyPropName] = mapKeys[ix];
+			obj = { ...obj, dayArray: [...map[mapKeys[ix]]] };
+			outArray.push(obj);
+		}
+		return outArray;
+	}
+
+	onMount(() => {
+		getDailyBreakdownArray();
+		getDailyNaNAppendedBreakdownArray(dailyBreakdownArray);
+
+		const dailyNaNAppendedBreakdownArrayKeys = Object.keys(dailyNaNAppendedBreakdownArray);
+		for (let ix = 0; ix < dailyNaNAppendedBreakdownArrayKeys.length; ix++) {
+			flatennedDailyNaNAppendedBreakdownArray[dailyNaNAppendedBreakdownArrayKeys[ix]] =
+				flattenDailyNaNAppendedBreakdownArray(
+					dailyNaNAppendedBreakdownArray[dailyNaNAppendedBreakdownArrayKeys[ix]]
+				);
+		}
+
+		console.log(flattenMapIntoArray('date', flatennedDailyNaNAppendedBreakdownArray));
+
+		// for (let ix = 0; ix < taskIDMonthPairs.length; ix++) {
+		// 	const monthTotal = heatmapData
+		// 		.filter(
+		// 			(elm) =>
+		// 				elm.letter === taskIDMonthPairs[ix].taskID && elm.month === taskIDMonthPairs[ix].month
+		// 		)
+		// 		.reduce((acc, cv) => parseFloat(acc) + parseFloat(cv.value), 0);
+		// 	data.push({
+		// 		letter: taskIDMonthPairs[ix].taskID,
+		// 		value: monthTotal.toFixed(2),
+		// 		month: taskIDMonthPairs[ix].month
+		// 	});
+		// }
+
+		// const c = document.getElementById('map');
+		// console.log(data);
+		// try {
+		// 	new HeatmapChart(c, { data, options });
+		// } catch (e) {
+		// 	console.log(e);
+		// }
+	});
+
+	function computeDayilyAverage(dataMember) {
+		const avg = (
+			durationTotalsByTask[dataMember.id] /
+			daysInSelectedTimeframe /
+			1000 /
+			60 /
+			60
+		).toFixed(2);
+
+		if (isNaN(avg) === true) {
+			return '-';
+		} else {
+			return `${avg}h`;
+		}
+	}
+
+	function parseTotalDuration(dataMember) {
+		const durationTotal = (durationTotalsByTask[dataMember.id] / 1000 / 60 / 60).toFixed(2);
+		if (isNaN(durationTotal) === true) {
+			return '-';
+		} else {
+			return `${durationTotal}h`;
+		}
+	}
+
+	function parseDayDuration(duration) {
+		if (isNaN(duration) === true) {
+			return '-';
+		} else {
+			return `${(duration / 1000 / 60 / 60).toFixed(2)}h`;
+		}
+	}
+</script>
+
+<!--box used as line-->
+<Box
+	transitions={getTransition(1)}
+	figmaImport={{ mobile: { top: 114, left: 119, width: 1, height: 25 } }}
+	backgroundColor={$globalStyle.activeColor}
+/>
+<Label
+	transitions={getTransition(1)}
+	verticalFont={$globalStyle.smallMobileFont}
+	figmaImport={{ mobile: { top: 114, left: 12, width: 102, height: 25 } }}
+	text="{getDisplayDateFromUnix($dataExplorerParams.timeframe.startUnix)} - {getDisplayDateFromUnix(
+		$dataExplorerParams.timeframe.endUnix
+	)}"
+	backgroundColor="{$globalStyle.activeColor}20"
+/>
+<Label
+	align="left"
+	alignPadding="2%"
+	transitions={getTransition(2)}
+	verticalFont={$globalStyle.smallMobileFont}
+	figmaImport={{ mobile: { top: 147, left: 12, width: 102, height: 25 } }}
+	text="Average"
+	backgroundColor="{$globalStyle.activeColor}20"
+/>
+<!--box used as line-->
+<Box
+	transitions={getTransition(2)}
+	figmaImport={{ mobile: { top: 147, left: 119, width: 1, height: 25 } }}
+	backgroundColor={$globalStyle.activeColor}
+/>
+<Label
+	align="left"
+	alignPadding="2%"
+	transitions={getTransition(3)}
+	verticalFont={$globalStyle.smallMobileFont}
+	figmaImport={{ mobile: { top: 180, left: 12, width: 102, height: 25 } }}
+	text="Totals"
+	backgroundColor="{$globalStyle.activeColor}20"
+/>
+<Box
+	transitions={getTransition(3)}
+	figmaImport={{ mobile: { top: 180, left: 119, width: 1, height: 25 } }}
+	backgroundColor={$globalStyle.activeColor}
+/>
+<List
+	onScroll={(e) => {
+		globalScrollLeft = e.target.scrollLeft;
+	}}
+	on:thisDOM={(e) => {
+		listDOMs = [...listDOMs, e.detail];
+	}}
+	direction="row"
+	figmaImport={{ mobile: { top: 114, left: 126, width: 222, height: 25 } }}
+>
+	{#each dataMemberNames as dataMember, ix}
+		<ListItem
+			transitions={getTransition(ix)}
+			width="40%"
+			height="100%"
+			style="margin-right: 2%; min-width: 40%;"
+		>
+			<Label
+				text={dataMember.name}
+				width="100%"
+				height="100%"
+				style="padding: 5%;"
+				verticalFont={$globalStyle.smallMobileFont}
+				backgroundColor="{ix % 2 === 0
+					? $globalStyle.activeColor
+					: $globalStyle.activeLightColor}20"
+			/>
+		</ListItem>
+	{/each}
+</List>
+<List
+	onScroll={(e) => {
+		globalScrollLeft = e.target.scrollLeft;
+	}}
+	on:thisDOM={(e) => {
+		listDOMs = [...listDOMs, e.detail];
+	}}
+	direction="row"
+	figmaImport={{ mobile: { top: 147, left: 126, width: 222, height: 25 } }}
+>
+	{#each dataMemberNames as dataMember, ix}
+		<ListItem
+			transitions={getTransition(ix)}
+			width="40%"
+			height="100%"
+			style="margin-right: 2%; min-width: 40%;"
+		>
+			<Label
+				text={computeDayilyAverage(dataMember)}
+				width="100%"
+				height="100%"
+				style="padding: 5%;"
+				verticalFont={$globalStyle.smallMobileFont}
+				backgroundColor="{ix % 2 === 0
+					? $globalStyle.activeColor
+					: $globalStyle.activeLightColor}20"
+			/>
+		</ListItem>
+	{/each}
+</List>
+<List
+	onScroll={(e) => {
+		globalScrollLeft = e.target.scrollLeft;
+	}}
+	on:thisDOM={(e) => {
+		listDOMs = [...listDOMs, e.detail];
+	}}
+	direction="row"
+	figmaImport={{ mobile: { top: 180, left: 126, width: 222, height: 25 } }}
+>
+	{#each dataMemberNames as dataMember, ix}
+		<ListItem
+			transitions={getTransition(ix)}
+			width="40%"
+			height="100%"
+			style="margin-right: 2%; min-width: 40%;"
+		>
+			<Label
+				text={parseTotalDuration(dataMember)}
+				width="100%"
+				height="100%"
+				style="padding: 5%;"
+				verticalFont={$globalStyle.smallMobileFont}
+				backgroundColor="{ix % 2 === 0
+					? $globalStyle.activeColor
+					: $globalStyle.activeLightColor}20"
+			/>
+		</ListItem>
+	{/each}
+</List>
+<HorizontalLine
+	figmaImport={{ mobile: { top: 213, left: 12, width: 336 } }}
+	style="height: 0.1vh; border-radius: {$globalStyle.borderRadius};"
+	color={$globalStyle.activeColor}
+/>
+<div id="map" />
+<List figmaImport={{ mobile: { top: 221, left: 12, width: 336, height: 356 } }}>
+	{#each flattenMapIntoArray('date', flatennedDailyNaNAppendedBreakdownArray) as dayStats, ix}
+		<ListItem
+			transitions={getTransition(ix + 1)}
+			style="min-height: 7%; max-height: 7%;"
+			marginBottom="3%"
+			width="100%"
+			height="10%"
+		>
+			<Label
+				left="0%"
+				width="30%"
+				height="100%"
+				backgroundColor="{$globalStyle.activeColor}20"
+				text={dayStats.date}
+				verticalFont={$globalStyle.smallMobileFont}
+			/>
+			<VerticalLine
+				left="32%"
+				style="width: 0.1vh; border-radius: {$globalStyle.borderRadius};"
+				color={$globalStyle.activeColor}
+			/>
+			<List
+				onScroll={(e) => {
+					globalScrollLeft = e.target.scrollLeft;
+				}}
+				on:thisDOM={(e) => {
+					listDOMs = [...listDOMs, e.detail];
+				}}
+				direction="row"
+				width="66%"
+				height="100%"
+				left="34%"
+			>
+				{#each dayStats.dayArray as day, ix}
+					<ListItem
+						transitions={getTransition(ix)}
+						width="40%"
+						height="100%"
+						style="margin-right: 2%; min-width: 40%;"
+					>
+						<Label
+							text={parseDayDuration(day.duration)}
+							width="100%"
+							height="100%"
+							style="padding: 5%;"
+							verticalFont={$globalStyle.smallMobileFont}
+							backgroundColor="{ix % 2 === 0
+								? $globalStyle.activeColor
+								: $globalStyle.activeLightColor}20"
+						/>
+					</ListItem>
+				{/each}
+			</List>
+		</ListItem>
+	{/each}
+</List>

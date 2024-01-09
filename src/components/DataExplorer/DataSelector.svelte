@@ -1,25 +1,20 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
 	import Button from '../common/Button.svelte';
 	import Label from '../common/Label.svelte';
 	import { getTransition } from '../../fn/getTransisitions';
-	import DataExplorerMenuButton from './DataExplorerMenuButton.svelte';
-	import TimeFrameSelector from './TimeFrameSelector.svelte';
-	import TimeDeco from '../deco/TimeDeco.svelte';
-	import DataSelectionDeco from '../deco/DataSelectionDeco.svelte';
-	import ExploreDeco from '../deco/ExploreDeco.svelte';
 	import globalStyle from '../../stores/globalStyles';
-	import DateInput from '../common/DateInput.svelte';
 	import Box from '../common/Box.svelte';
-	import DropdownDeco from '../deco/DropdownDeco.svelte';
-	import { createEventDispatcher, onMount } from 'svelte';
-	import getDateFromUnix from '../../fn/getDateFromUnix';
 	import { dataExplorerParams } from './dataExplorerParams';
-	import { tasks } from '../../stores/dayViewSelectedDay';
+	import { categories, tasks } from '../../stores/dayViewSelectedDay';
+	import List from '../common/List.svelte';
+	import ListItem from '../common/ListItem.svelte';
 
 	let selectedDataSource = 'tasks'; // tasks | categories | groups
 	const menuButtonStyle = `border-radius: 0px; border: none; border-bottom: solid 1px ${$globalStyle.activeColor}; border-left: solid 1px ${$globalStyle.activeColor};`;
 	const containerConfig = { containerWidth: 336, containerHeight: 402 };
+
+	$: dataExplorerParamsKey =
+		selectedDataSource === 'tasks' ? 'selectedTaskIDs' : 'selectedCategoriesIDs';
 </script>
 
 <Box
@@ -34,8 +29,55 @@
 		}
 	}}
 >
+	{#if selectedDataSource === 'tasks' || selectedDataSource === 'categories'}
+		<List
+			figmaImport={{ mobile: { left: 8, width: 320, height: 350, top: 50 } }}
+			figmaImportConfig={containerConfig}
+		>
+			{#each selectedDataSource === 'tasks' ? $tasks.filter((elm) => elm.active === true) : $categories.filter((elm) => elm.active === true) as element, ix}
+				<ListItem
+					transitions={getTransition(ix + 1)}
+					width="100%"
+					height="12%"
+					style="min-height: 12%;"
+					marginBottom="5%"
+				>
+					<Button
+						onClick={() => {
+							const elementIndexInDataExplorerParams = $dataExplorerParams[
+								dataExplorerParamsKey
+							].indexOf(element.id);
+							if (elementIndexInDataExplorerParams === -1) {
+								dataExplorerParams.update((prev) => {
+									prev[dataExplorerParamsKey] = [...prev[dataExplorerParamsKey], element.id];
+									return prev;
+								});
+							} else {
+								dataExplorerParams.update((prev) => {
+									prev[dataExplorerParamsKey].splice(elementIndexInDataExplorerParams, 1);
+									return prev;
+								});
+							}
+						}}
+						isSelected={$dataExplorerParams[dataExplorerParamsKey].indexOf(element.id) !== -1}
+						hoverOpacityMax={20}
+						hoverOpacityMin={0}
+						label={element.name}
+						width="100%"
+						align="left"
+						alignPadding="4%"
+						height="100%"
+					/>
+					{#if $dataExplorerParams[dataExplorerParamsKey].indexOf(element.id) !== -1}
+						<Label left="90%" text="⛶" />
+					{/if}
+				</ListItem>
+			{/each}
+		</List>
+	{/if}
 	<Button
-		style="{menuButtonStyle} border-top-left-radius: {$globalStyle.borderRadius};"
+		transitions={getTransition(1)}
+		style="{menuButtonStyle} border-left: none; border-top-left-radius: {$globalStyle.borderRadius};"
 		label="Tasks"
 		onClick={() => (selectedDataSource = 'tasks')}
 		isSelected={selectedDataSource === 'tasks'}
@@ -44,6 +86,7 @@
 	/>
 	<Button
 		style={menuButtonStyle}
+		transitions={getTransition(2)}
 		label="Categories"
 		onClick={() => (selectedDataSource = 'categories')}
 		isSelected={selectedDataSource === 'categories'}
@@ -51,7 +94,8 @@
 		figmaImportConfig={containerConfig}
 	/>
 	<Button
-		style="{menuButtonStyle}  border-top-right-radius: {$globalStyle.borderRadius};"
+		transitions={getTransition(3)}
+		style="{menuButtonStyle} border-top-right-radius: {$globalStyle.borderRadius};"
 		label="Task Groups"
 		isSelected={selectedDataSource === 'groups'}
 		onClick={() => (selectedDataSource = 'groups')}

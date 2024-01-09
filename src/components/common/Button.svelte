@@ -35,6 +35,7 @@
 	let fontType = 'rigid';
 	let fontSize = '2.4vh';
 	let onSelect;
+	let align = 'center';
 	let isMouseHovering = false;
 	const root = document.documentElement;
 	let clientWidth = root.clientWidth;
@@ -47,6 +48,7 @@
 	let mouseLeave;
 	let transitions = {};
 	let figmaImport = {};
+	let alignPadding = '0%';
 	let toolTipText = '';
 	let isSelected = undefined; // undefined by default for backward compatibiliy. use for single selection groups
 
@@ -84,6 +86,8 @@
 	function iu(val, valDefault) {
 		return val != undefined ? val : valDefault;
 	} //shorthand for isUndefined. short name for readibility
+
+	const alignToPadding = { start: 'left', end: 'right', right: 'right', left: 'left' };
 
 	function fontController() {
 		if (isMobile() == true) {
@@ -136,6 +140,7 @@
 		top,
 		left,
 		horizontalFont,
+		align,
 		verticalFont,
 		opacity,
 		style,
@@ -143,6 +148,7 @@
 		borderRadius,
 		fontType,
 		desktopFont,
+		alignPadding,
 		hoverOpacityMin,
 		hoverOpacityMax,
 		horizontalCenter,
@@ -200,6 +206,8 @@
         height: {iu(height, 'auto')}; 
 		{Object.keys(figmaImport).length > 0 ? FigmaImporter(figmaImport, figmaImportConfig) : ''} 
         color: {iu(color, '#FFF')}; 
+		justify-content: {align};
+		text-align: {align};	
         background-color: {iu(backgroundColor, '#0500FF')}{isMouseHovering
 			? hoverOpacityMax
 			: hoverOpacityMin}; 
@@ -227,6 +235,7 @@
 			'px;'};
         backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
         --webkit-backdrop-filter: {iu(backdropFilter, 'blur(0px)')};
+		padding-{alignToPadding[align]}: {alignPadding};
         {iu(style, '')}"
 	>
 		{label ? label : ''}
