@@ -14,6 +14,7 @@
 	import DropdownDeco from '../deco/DropdownDeco.svelte';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import getDateFromUnix from '../../fn/getDateFromUnix';
+	import { tasksLog } from '../../stores/dayViewSelectedDay';
 	import { dataExplorerParams } from './dataExplorerParams';
 	const dayMillis = 1000 * 60 * 60 * 24 * 1;
 	const weekMillis = 1000 * 60 * 60 * 24 * 7;

@@ -102,9 +102,10 @@
 	color={$globalStyle.inactiveColor}
 	borderColor={$globalStyle.inactiveColor}
 	label="Back"
-	horizontalCenter={true}
 	onClick={() => {
 		window.location.hash = '#logs';
 	}}
-	figmaImport={{ mobile: { top: 589, width: 336, left: '50%', height: 44 } }}
+	figmaImport={{
+		mobile: { top: 589, width: displayedStage === 'explorer' ? 163 : 336, left: 12, height: 44 }
+	}}
 />

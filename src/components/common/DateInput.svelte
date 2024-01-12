@@ -10,6 +10,7 @@
 	import globalStyle from '../../stores/globalStyles';
 	import readTransitions from '../../fn/readTransitions';
 	import getDateFromUnix from '../../fn/getDateFromUnix';
+	import { datePadding } from '../../fn/datePadding';
 	const dispatch = createEventDispatcher();
 	let lglobalStyles = $globalStyle;
 
@@ -42,6 +43,8 @@
 	let show = true;
 	let placeholder = '';
 	let tabletWidth;
+	let min = 0;
+	let max = undefined;
 	let desktopFont = lglobalStyles.regularDesktopFont;
 	let horizontalCenter = false;
 	let verticalCenter = false;
@@ -52,12 +55,15 @@
 	let autofocus = false;
 	let readonly = false;
 	let unixDefaultValue = undefined;
-	let passwordValue = '';
-	let passwordDisplayedValue = '';
 
 	function onValueChange(value) {
 		dispatch('onValue', value);
 		dispatch('onUnixValue', new Date(value).getTime());
+	}
+
+	function unixToMinMaxStrFormat(unix) {
+		const date = new Date(unix);
+		return `${date.getFullYear()}-${date.getMonth()}-${datePadding(date.getDay())}`;
 	}
 
 	function onUnixDefValueChange(unixDefaultValue) {
@@ -174,7 +180,9 @@
 		autofocus,
 		placeholder,
 		readonly,
-		unixDefaultValue
+		unixDefaultValue,
+		min,
+		max
 	};
 </script>
 
@@ -192,6 +200,8 @@
 		on:touchend={onTouchEnd}
 		on:click={onClick}
 		on:mouseenter={() => (isMouseHovering = true)}
+		{min}
+		{max}
 		on:mouseleave={() => (isMouseHovering = false)}
 		class={`input ${className ? className : ''}`}
 		style="
