@@ -194,7 +194,10 @@
 				});
 			}
 		}
-
+		const midnightISODate = new Date(dayUnix).setHours(0, 0, 1);
+		const nextAlmostMidnightISODate = new Date(dayUnix).setHours(23, 59, 58);
+		out.push({ group: 'tps', date: midnightISODate, value: 0 });
+		out.push({ group: 'tpe', date: nextAlmostMidnightISODate, value: 0 });
 		return out;
 	}
 
