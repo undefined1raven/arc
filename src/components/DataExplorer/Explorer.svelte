@@ -14,7 +14,7 @@
 	import getDateFromUnix from '../../fn/getDateFromUnix';
 	import HorizontalLine from '../common/HorizontalLine.svelte';
 	import '@carbon/charts/styles.css';
-	import { HeatmapChart } from '@carbon/charts';
+	import { HeatmapChart, DonutChart } from '@carbon/charts';
 	import VerticalLine from '../common/VerticalLine.svelte';
 	import { fly } from 'svelte/transition';
 
@@ -517,7 +517,7 @@
 {/if}
 
 {#if displayMode === 'charts'}
-	<ExplorerCharts dataMembers={dataMemberNames} />
+	<ExplorerCharts dataMembers={dataMemberNames} {dailyViewsDisplayArray} />
 {/if}
 
 <Button
@@ -539,3 +539,5 @@
 	hoverOpacityMax={20}
 	label={displayMode === 'data' ? 'Charts' : 'Data'}
 />
+
+<div id="dailyChartContainer" />

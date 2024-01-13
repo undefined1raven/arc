@@ -6,6 +6,8 @@
 	import Box from '../common/Box.svelte';
 	import { categories, tasks, tasksLog } from '../../stores/dayViewSelectedDay';
 	import List from '../common/List.svelte';
+	import DateInput from '../common/DateInput.svelte';
+	import DropdownDeco from '../deco/DropdownDeco.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { dataExplorerParams } from './dataExplorerParams';
 	import ExplorerCharts from './ExplorerCharts.svelte';
@@ -15,11 +17,17 @@
 	import getRandomInt from '../../fn/getRandomInt';
 	import HorizontalLine from '../common/HorizontalLine.svelte';
 	import '@carbon/charts/styles.css';
-	import { HeatmapChart } from '@carbon/charts';
+	import { HeatmapChart, DonutChart } from '@carbon/charts';
 	import VerticalLine from '../common/VerticalLine.svelte';
 	import { fly } from 'svelte/transition';
 	import { donutBaseOptions } from './explorerChartOptions';
-	import { DonutChart } from '@carbon/charts-svelte';
+
+	const dayMillis = 1000 * 60 * 60 * 24;
+
+	function getDisplayDateFromUnix(unix) {
+		const date = new Date(unix);
+		return `${date.getDate()} ${date.toLocaleString('default', { month: 'short' })}`;
+	}
 
 	const chartColors = [
 		'#2400FF',
@@ -66,7 +74,8 @@
 	// };
 
 	let dataMembers = []; /// {id, name, active, color}
-
+	let dailyViewsDisplayArray = [];
+	let dailyViewMode = 'breakdown'; // breakdown | timeline
 	let listDOMs = [];
 
 	let globalScrollLeft = 0;
@@ -80,8 +89,19 @@
 		}
 	}
 
-	$: onGlobalScrollLeftChange(globalScrollLeft);
+	function dailyCompositionChartDataChange(dailyCompositionChartData) {
+		dailyCompChart?.model?.setData(dailyCompositionChartData);
+	}
 
+	$: dailyCompositionChartDataChange(dailyCompositionChartData);
+	$: onGlobalScrollLeftChange(globalScrollLeft);
+	let selectedDayForPlottingUnix = $dataExplorerParams.timeframe.endUnix - 1000 * 60 * 60 * 24;
+	$: dailyCompositionChartData = dayArrayToDailyCompositionChartData(
+		selectedDayForPlottingUnix,
+		dataMembers
+	);
+	$: dailyCompositionChartColorsMap = dataMembersToChartColorMap(dataMembers);
+	let dailyCompChart;
 	onMount(() => {
 		setTimeout(() => {
 			for (let ix = 0; ix < dataMembers.length; ix++) {
@@ -93,47 +113,75 @@
 				} else {
 					dataMembers[ix].color = chartColors[ix];
 				}
-				if (ix < 5) {
-					dataMembers[ix].active = true;
-				} else {
-					dataMembers[ix].active = false;
-				}
+				dataMembers[ix].active = true;
 			}
-			const dailyChart = document.getElementById('dailyChartContainer');
 
-			let dailyData = [
-				{
-					group: '2V2N 9KYPM version 1',
-					value: 20000
-				},
-				{
-					group: 'L22I P66EP L22I P66EP L22I P66EP',
-					value: 65000
-				},
-				{
-					group: 'JQAI 2M4L1',
-					value: 75000
-				},
-				{
-					group: 'J9DZ F37AP',
-					value: 1200
-				},
-				{
-					group: 'YEL48 Q6XK YEL48',
-					value: 10000
-				},
-				{
-					group: 'Misc',
-					value: 25000
+			let chartHolder = document.getElementById('dailyChartContainer');
+			dailyCompChart = new DonutChart(chartHolder, {
+				data: dailyCompositionChartData.filter((elm) => elm.active === true),
+				options: {
+					...donutBaseOptions,
+					color: { scale: dailyCompositionChartColorsMap },
+					title: 'Day Breakdown',
+					donut: { center: { label: 'Minutes' } }
 				}
-			];
-			console.log(dailyChart)
-			new DonutChart(dailyChart, { data: dailyData, options: donutBaseOptions });
+			});
 		}, 20);
 	});
 
-	export { dataMembers };
+	function dayArrayToDailyCompositionChartData(dayUnix, dataMembers) {
+		let out = [];
+		let date = getDateFromUnix(dayUnix);
+		const dayArray = dailyViewsDisplayArray.find((elm) => elm.date === date)?.dayArray;
+		if (dayArray != undefined && dayArray.length) {
+			for (let ix = 0; ix < dayArray.length; ix++) {
+				const task = dayArray[ix];
+				const dataMember = dataMembers.find((elm) => elm.id === task.taskID);
+				if (dataMember.active === true) {
+					out.push({
+						active: dataMember.active,
+						group: dataMember.name,
+						value: isNaN(task.duration) ? 0 : task.duration
+					});
+				}
+			}
+		} else {
+			throw new Error('Day Data Not Found');
+		}
+		return out;
+	}
+	function dataMembersToChartColorMap(dataMembers) {
+		let out = {};
+		for (let ix = 0; ix < dataMembers.length; ix++) {
+			const dataMember = dataMembers[ix];
+			if (dataMember.active === true) {
+				out[dataMember.name] = dataMember.color;
+			}
+		}
+		return out;
+	}
+
+	$: console.log(dailyCompositionChartData);
+
+	function checkIfUnixIsWihthinSelectedRange(unix) {
+		const date = getDateFromUnix(unix);
+		return dailyViewsDisplayArray.find((elm) => elm.date === date) !== undefined;
+	}
+
+	export { dataMembers, dailyViewsDisplayArray };
 </script>
+
+<Label
+	align="left"
+	alignPadding="2%"
+	transitions={getTransition(1)}
+	verticalFont={$globalStyle.smallMobileFont}
+	figmaImport={{ mobile: { top: 114, left: 12, width: 102, height: 25 } }}
+	text="{getDisplayDateFromUnix($dataExplorerParams.timeframe.startUnix)} - {getDisplayDateFromUnix(
+		$dataExplorerParams.timeframe.endUnix
+	)}"
+	backgroundColor="{$globalStyle.activeColor}20"
+/>
 
 <Label
 	align="left"
@@ -141,11 +189,11 @@
 	transitions={getTransition(2)}
 	verticalFont={$globalStyle.smallMobileFont}
 	figmaImport={{ mobile: { top: 147, left: 12, width: 102, height: 25 } }}
-	text="Average"
+	text="Selector"
 	backgroundColor="{$globalStyle.activeColor}20"
 />
 <Box
-	transitions={getTransition(3)}
+	transitions={getTransition(2)}
 	figmaImport={{ mobile: { top: 147, left: 119, width: 1, height: 25 } }}
 	backgroundColor={$globalStyle.activeColor}
 />
@@ -168,23 +216,129 @@
 		>
 			<Button
 				onClick={() => {
-					dataMembers[ix].active = !dataMembers[ix].active;
+					dataMembers[ix].active = !dataMember.active;
 				}}
+				color={dataMember.active ? dataMember.color : $globalStyle.inactiveColor}
+				borderColor={dataMember.active ? dataMember.color : $globalStyle.inactiveColor}
 				label={dataMember.name}
 				width="100%"
 				height="100%"
-				color={dataMember.active ? dataMember.color : $globalStyle.inactiveMono}
-				borderColor={dataMember.active ? dataMember.color : $globalStyle.inactiveColor}
-				backgroundColor="#00000000"
-				hoverOpacityMin={0}
-				hoverOpacityMax={20}
 				style="padding: 5%;"
 				verticalFont={$globalStyle.smallMobileFont}
+				backgroundColor="#00000002"
 			/>
 		</ListItem>
 	{/each}
 </List>
-<Box
-	id="dailyChartContainer"
-	figmaImport={{ mobile: { top: 279, left: 12, width: 336, height: 302 } }}
+
+<Label
+	align="left"
+	alignPadding="2%"
+	transitions={getTransition(3)}
+	verticalFont={$globalStyle.smallMobileFont}
+	figmaImport={{ mobile: { top: 180, left: 12, width: 102, height: 25 } }}
+	text="Totals"
+	backgroundColor="{$globalStyle.activeColor}20"
 />
+<Box
+	transitions={getTransition(3)}
+	figmaImport={{ mobile: { top: 180, left: 119, width: 1, height: 25 } }}
+	backgroundColor={$globalStyle.activeColor}
+/>
+
+<DateInput
+	transitions={getTransition(4)}
+	style="text-align: center;"
+	borderColor={$globalStyle.activeColor}
+	verticalFont={$globalStyle.mediumMobileFont}
+	figmaImport={{ mobile: { top: 213, left: 93, width: 174, height: 25 } }}
+	unixDefaultValue={selectedDayForPlottingUnix}
+	on:onUnixValue={(e) => {
+		selectedDayForPlottingUnix = e.detail;
+	}}
+/>
+<Button
+	onClick={() => {
+		let newSelectedDayUnix = selectedDayForPlottingUnix - dayMillis;
+		if (
+			dailyViewsDisplayArray.find((elm) => elm.date === getDateFromUnix(newSelectedDayUnix)) !==
+			undefined
+		) {
+			selectedDayForPlottingUnix = newSelectedDayUnix;
+		}
+	}}
+	hoverOpacityMin={0}
+	hoverOpacityMax={20}
+	borderColor={checkIfUnixIsWihthinSelectedRange(selectedDayForPlottingUnix - dayMillis)
+		? $globalStyle.activeColor
+		: $globalStyle.inactiveColor}
+	transitions={getTransition(4)}
+	verticalFont={$globalStyle.smallMobileFont}
+	figmaImport={{ mobile: { top: 213, left: 12, width: 79, height: 25 } }}
+	><DropdownDeco
+		color={checkIfUnixIsWihthinSelectedRange(selectedDayForPlottingUnix - dayMillis)
+			? $globalStyle.activeColor
+			: $globalStyle.inactiveColor}
+		width="30%"
+		height="80%"
+	/></Button
+>
+<Button
+	onClick={() => {
+		let newSelectedDayUnix = selectedDayForPlottingUnix + dayMillis;
+		if (
+			dailyViewsDisplayArray.find((elm) => elm.date === getDateFromUnix(newSelectedDayUnix)) !==
+			undefined
+		) {
+			selectedDayForPlottingUnix = newSelectedDayUnix;
+		}
+	}}
+	hoverOpacityMin={0}
+	hoverOpacityMax={20}
+	borderColor={checkIfUnixIsWihthinSelectedRange(selectedDayForPlottingUnix + dayMillis)
+		? $globalStyle.activeColor
+		: $globalStyle.inactiveColor}
+	transitions={getTransition(4)}
+	verticalFont={$globalStyle.smallMobileFont}
+	figmaImport={{ mobile: { top: 213, left: 269, width: 79, height: 25 } }}
+	><DropdownDeco
+		color={checkIfUnixIsWihthinSelectedRange(selectedDayForPlottingUnix + dayMillis)
+			? $globalStyle.activeColor
+			: $globalStyle.inactiveColor}
+		width="30%"
+		height="80%"
+		style="transform: rotate(180deg);"
+	/></Button
+>
+<Button
+	style="z-index: 400;"
+	onClick={() => {
+		if (dailyViewMode === 'breakdown') {
+			dailyViewMode = 'timeline';
+		} else {
+			dailyViewMode = 'breakdown';
+		}
+	}}
+	label={dailyViewMode === 'breakdown' ? 'Switch to Timeline' : 'Switch to Breakdown'}
+	hoverOpacityMin={0}
+	hoverOpacityMax={20}
+	horizontalCenter={true}
+	transitions={getTransition(5)}
+	verticalFont={$globalStyle.smallMobileFont}
+	figmaImport={{ mobile: { top: 246, left: '50%', width: 129, height: 25 } }}
+/>
+
+<Box
+	transitions={getTransition(6)}
+	figmaImport={{ mobile: { top: 235, left: 12, width: 336, height: 370 } }}
+>
+	<div id="dailyChartContainer" style="position: absolute; width: 100%; height: 100%:" />
+</Box>
+
+<style>
+	:global(.header) {
+		padding-left: 2%;
+		background-color: var(--activeMono);
+		border-radius: var(--borderRadius10);
+	}
+</style>
