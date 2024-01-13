@@ -93,7 +93,12 @@
 			} else {
 				dailyBreakdownArray[getDateFromUnix(taskStartUnix)] = [
 					...dailyBreakdownArray[getDateFromUnix(taskStartUnix)],
-					{ taskID: taskID, duration: taskDuration }
+					{
+						taskID: taskID,
+						duration: taskDuration,
+						taskStartUnix: taskStartUnix,
+						taskEndUnix: task.taskEndUnix
+					}
 				];
 			}
 
@@ -517,7 +522,7 @@
 {/if}
 
 {#if displayMode === 'charts'}
-	<ExplorerCharts dataMembers={dataMemberNames} {dailyViewsDisplayArray} />
+	<ExplorerCharts dataMembers={dataMemberNames} {dailyViewsDisplayArray} dailyBreakdownMap={dailyBreakdownArray} />
 {/if}
 
 <Button

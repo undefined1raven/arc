@@ -4,23 +4,18 @@
 	import { getTransition } from '../../fn/getTransisitions';
 	import globalStyle from '../../stores/globalStyles';
 	import Box from '../common/Box.svelte';
-	import { categories, tasks, tasksLog } from '../../stores/dayViewSelectedDay';
 	import List from '../common/List.svelte';
 	import DateInput from '../common/DateInput.svelte';
 	import DropdownDeco from '../deco/DropdownDeco.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { dataExplorerParams } from './dataExplorerParams';
-	import ExplorerCharts from './ExplorerCharts.svelte';
 	import { onDestroy, onMount } from 'svelte';
-	import { allowMenuSwipe } from '../../stores/allowMenuSwpite';
 	import getDateFromUnix from '../../fn/getDateFromUnix';
 	import getRandomInt from '../../fn/getRandomInt';
-	import HorizontalLine from '../common/HorizontalLine.svelte';
 	import '@carbon/charts/styles.css';
-	import { HeatmapChart, DonutChart } from '@carbon/charts';
-	import VerticalLine from '../common/VerticalLine.svelte';
+	import { HeatmapChart, DonutChart, SimpleBarChart } from '@carbon/charts';
 	import { fly } from 'svelte/transition';
-	import { donutBaseOptions } from './explorerChartOptions';
+	import { donutBaseOptions, horizontalFloatingBarBaseOptions } from './explorerChartOptions';
 
 	const dayMillis = 1000 * 60 * 60 * 24;
 
@@ -77,7 +72,7 @@
 	let dailyViewsDisplayArray = [];
 	let dailyViewMode = 'breakdown'; // breakdown | timeline
 	let listDOMs = [];
-
+	let dailyBreakdownMap = {};
 	let globalScrollLeft = 0;
 
 	function onGlobalScrollLeftChange(globalScrollLeft) {
@@ -93,15 +88,58 @@
 		dailyCompChart?.model?.setData(dailyCompositionChartData);
 	}
 
+	function dayTimelineChartDataChange(dayTimelineChartData) {
+		dayTimelineChart?.model?.setData(dayTimelineChartData);
+	}
+
+	function onDayViewModeChange(dayViewMode) {
+		setTimeout(() => {
+			if (dayViewMode === 'breakdown') {
+				let chartHolder = document.getElementById('dailyChartContainer');
+				dailyCompChart = new DonutChart(chartHolder, {
+					data: dailyCompositionChartData,
+					options: {
+						...donutBaseOptions,
+						color: { scale: dailyCompositionChartColorsMap },
+						title: 'Day Breakdown',
+						donut: { center: { label: 'Millis' } }
+					}
+				});
+			} else {
+				let chartHolder = document.getElementById('dayTimelineChartContainer');
+				dayTimelineChart = new SimpleBarChart(chartHolder, {
+					data: dayTimelineChartData,
+					options: {
+						...horizontalFloatingBarBaseOptions,
+						color: { scale: dailyCompositionChartColorsMap },
+						title: 'Day Timeline',
+						donut: { center: { label: 'Millis' } }
+					}
+				});
+			}
+		}, 20);
+	}
+
 	$: dailyCompositionChartDataChange(dailyCompositionChartData);
+
+	$: dayTimelineChartDataChange(dayTimelineChartData);
+
 	$: onGlobalScrollLeftChange(globalScrollLeft);
+
 	let selectedDayForPlottingUnix = $dataExplorerParams.timeframe.endUnix - 1000 * 60 * 60 * 24;
+
 	$: dailyCompositionChartData = dayArrayToDailyCompositionChartData(
 		selectedDayForPlottingUnix,
 		dataMembers
 	);
+
+	$: dayTimelineChartData = dayArrayToDayTimelineChartData(selectedDayForPlottingUnix, dataMembers);
+
 	$: dailyCompositionChartColorsMap = dataMembersToChartColorMap(dataMembers);
 	let dailyCompChart;
+	let dayTimelineChart;
+	$: onDayViewModeChange(dailyViewMode);
+
 	onMount(() => {
 		setTimeout(() => {
 			for (let ix = 0; ix < dataMembers.length; ix++) {
@@ -115,17 +153,6 @@
 				}
 				dataMembers[ix].active = true;
 			}
-
-			let chartHolder = document.getElementById('dailyChartContainer');
-			dailyCompChart = new DonutChart(chartHolder, {
-				data: dailyCompositionChartData.filter((elm) => elm.active === true),
-				options: {
-					...donutBaseOptions,
-					color: { scale: dailyCompositionChartColorsMap },
-					title: 'Day Breakdown',
-					donut: { center: { label: 'Minutes' } }
-				}
-			});
 		}, 20);
 	});
 
@@ -150,6 +177,27 @@
 		}
 		return out;
 	}
+
+	function dayArrayToDayTimelineChartData(dayUnix, dataMembers) {
+		let out = [];
+		const selectedDayArray = dailyBreakdownMap[getDateFromUnix(dayUnix)];
+		for (let ix = 0; ix < selectedDayArray.length; ix++) {
+			const task = selectedDayArray[ix];
+			const dataMember = dataMembers.find((elm) => elm.id === task.taskID);
+			const ISODate = new Date(task.taskStartUnix).toISOString();
+			if (dataMember.active === true) {
+				out.push({
+					group: dataMember.name,
+					date: ISODate,
+					value: task.taskEndUnix - task.taskStartUnix,
+					endDate: task.taskEndUnix
+				});
+			}
+		}
+
+		return out;
+	}
+
 	function dataMembersToChartColorMap(dataMembers) {
 		let out = {};
 		for (let ix = 0; ix < dataMembers.length; ix++) {
@@ -161,14 +209,14 @@
 		return out;
 	}
 
-	$: console.log(dailyCompositionChartData);
-
 	function checkIfUnixIsWihthinSelectedRange(unix) {
 		const date = getDateFromUnix(unix);
 		return dailyViewsDisplayArray.find((elm) => elm.date === date) !== undefined;
 	}
 
-	export { dataMembers, dailyViewsDisplayArray };
+	$: console.log(dayTimelineChartData);
+
+	export { dataMembers, dailyViewsDisplayArray, dailyBreakdownMap };
 </script>
 
 <Label
@@ -328,12 +376,24 @@
 	figmaImport={{ mobile: { top: 246, left: '50%', width: 129, height: 25 } }}
 />
 
-<Box
-	transitions={getTransition(6)}
-	figmaImport={{ mobile: { top: 235, left: 12, width: 336, height: 370 } }}
->
-	<div id="dailyChartContainer" style="position: absolute; width: 100%; height: 100%:" />
-</Box>
+{#if dailyViewMode === 'breakdown'}
+	<Box
+		style="overflow: hidden;"
+		transitions={getTransition(6)}
+		figmaImport={{ mobile: { top: 279, left: 12, width: 336, height: 302 } }}
+	>
+		<div id="dailyChartContainer" style="position: absolute; width: 100%; height: 100%:" />
+	</Box>
+{/if}
+{#if dailyViewMode === 'timeline'}
+	<Box
+		style="overflow: hidden;"
+		transitions={getTransition(6)}
+		figmaImport={{ mobile: { top: 279, left: 12, width: 336, height: 302 } }}
+	>
+		<div id="dayTimelineChartContainer" style="position: absolute; width: 100%; height: 100%:" />
+	</Box>
+{/if}
 
 <style>
 	:global(.header) {
