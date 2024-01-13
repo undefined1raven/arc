@@ -13,9 +13,14 @@
 	import getDateFromUnix from '../../fn/getDateFromUnix';
 	import getRandomInt from '../../fn/getRandomInt';
 	import '@carbon/charts/styles.css';
-	import { HeatmapChart, DonutChart, SimpleBarChart } from '@carbon/charts';
+	import DayTimelineChart from './DayTimelineChart.svelte'
+	import { HeatmapChart, DonutChart, SimpleBarChart, StackedBarChart } from '@carbon/charts';
 	import { fly } from 'svelte/transition';
-	import { donutBaseOptions, horizontalFloatingBarBaseOptions } from './explorerChartOptions';
+	import {
+		donutBaseOptions,
+		horizontalFloatingBarBaseOptions,
+		horizontalStackedBarBaseOptions
+	} from './explorerChartOptions';
 
 	const dayMillis = 1000 * 60 * 60 * 24;
 
@@ -106,16 +111,16 @@
 					}
 				});
 			} else {
-				let chartHolder = document.getElementById('dayTimelineChartContainer');
-				dayTimelineChart = new SimpleBarChart(chartHolder, {
-					data: dayTimelineChartData,
-					options: {
-						...horizontalFloatingBarBaseOptions,
-						color: { scale: dailyCompositionChartColorsMap },
-						title: 'Day Timeline',
-						donut: { center: { label: 'Millis' } }
-					}
-				});
+				// let chartHolder = document.getElementById('dayTimelineChartContainer');
+				// dayTimelineChart = new StackedBarChart(chartHolder, {
+				// 	data: dayTimelineChartData,
+				// 	options: {
+				// 		...horizontalStackedBarBaseOptions,
+				// 		color: { scale: dailyCompositionChartColorsMap },
+				// 		title: 'Day Timeline',
+				// 		donut: { center: { label: 'Millis' } }
+				// 	}
+				// });
 			}
 		}, 20);
 	}
@@ -178,26 +183,40 @@
 		return out;
 	}
 
+	let hourConstant = 96; ///height in pixels for an hour on the day timeline plot
 	function dayArrayToDayTimelineChartData(dayUnix, dataMembers) {
 		let out = [];
 		const selectedDayArray = dailyBreakdownMap[getDateFromUnix(dayUnix)];
+		const prevMidnightUnix = new Date(dayUnix).setHours(0, 0, 0);
 		for (let ix = 0; ix < selectedDayArray.length; ix++) {
 			const task = selectedDayArray[ix];
 			const dataMember = dataMembers.find((elm) => elm.id === task.taskID);
-			const ISODate = new Date(task.taskStartUnix).toISOString();
+
+			const offsetedStartUnix = task.taskStartUnix - prevMidnightUnix;
+			const offsetedEndUnix = task.taskEndUnix - prevMidnightUnix;
+			const offsetedDeltaUnix = offsetedEndUnix - offsetedStartUnix;
+
+			const totalPlotHeight = 24 * hourConstant;
+
+			const chunkHeightPX = (offsetedDeltaUnix / 1000 / 60 / 60).toFixed(2) * hourConstant;
+			const chunkHeightPercentage = ((chunkHeightPX * 100) / totalPlotHeight).toFixed(4);
+
+			const chunkTop = (
+				((offsetedStartUnix / 1000 / 60 / 60).toFixed(2) * 100) /
+				hourConstant
+			).toFixed(4);
+
 			if (dataMember.active === true) {
 				out.push({
-					group: dataMember.name,
-					date: ISODate,
-					value: task.taskEndUnix - task.taskStartUnix,
-					endDate: task.taskEndUnix
+					name: dataMember.name,
+					chunkHeight: chunkHeightPercentage,
+					chunkTop: chunkTop,
+					color: dataMember.color
 				});
 			}
 		}
 		const midnightISODate = new Date(dayUnix).setHours(0, 0, 1);
 		const nextAlmostMidnightISODate = new Date(dayUnix).setHours(23, 59, 58);
-		out.push({ group: 'tps', date: midnightISODate, value: 0 });
-		out.push({ group: 'tpe', date: nextAlmostMidnightISODate, value: 0 });
 		return out;
 	}
 
@@ -390,11 +409,11 @@
 {/if}
 {#if dailyViewMode === 'timeline'}
 	<Box
-		style="overflow: hidden;"
+		style="overflow: scroll;"
 		transitions={getTransition(6)}
 		figmaImport={{ mobile: { top: 279, left: 12, width: 336, height: 302 } }}
 	>
-		<div id="dayTimelineChartContainer" style="position: absolute; width: 100%; height: 100%:" />
+		<DayTimelineChart chunks={dayTimelineChartData}></DayTimelineChart>
 	</Box>
 {/if}
 
