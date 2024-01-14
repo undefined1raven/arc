@@ -9,11 +9,13 @@
 	import DropdownDeco from '../deco/DropdownDeco.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { dataExplorerParams } from './dataExplorerParams';
+	import timePadding from '../../fn/timePadding';
 	import { onDestroy, onMount } from 'svelte';
 	import getDateFromUnix from '../../fn/getDateFromUnix';
 	import getRandomInt from '../../fn/getRandomInt';
+	import { dayHourConstant } from './DayTimelineChartHourConstant.js';
 	import '@carbon/charts/styles.css';
-	import DayTimelineChart from './DayTimelineChart.svelte'
+	import DayTimelineChart from './DayTimelineChart.svelte';
 	import { HeatmapChart, DonutChart, SimpleBarChart, StackedBarChart } from '@carbon/charts';
 	import { fly } from 'svelte/transition';
 	import {
@@ -183,7 +185,7 @@
 		return out;
 	}
 
-	let hourConstant = 96; ///height in pixels for an hour on the day timeline plot
+	let hourConstant = $dayHourConstant; ///height in pixels for an hour on the day timeline plot
 	function dayArrayToDayTimelineChartData(dayUnix, dataMembers) {
 		let out = [];
 		const selectedDayArray = dailyBreakdownMap[getDateFromUnix(dayUnix)];
@@ -201,17 +203,31 @@
 			const chunkHeightPX = (offsetedDeltaUnix / 1000 / 60 / 60).toFixed(2) * hourConstant;
 			const chunkHeightPercentage = ((chunkHeightPX * 100) / totalPlotHeight).toFixed(4);
 
-			const chunkTop = (
-				((offsetedStartUnix / 1000 / 60 / 60).toFixed(2) * 100) /
-				hourConstant
-			).toFixed(4);
+			const dayMillis = 1000 * 60 * 60 * 24;
+			const taskDuration = task.taskEndUnix - task.taskStartUnix;
+
+			const chunkHeightP2 = ((taskDuration * 100) / dayMillis).toFixed(2);
+
+			const chunkTop = (((task.taskStartUnix - prevMidnightUnix) * 100) / dayMillis).toFixed(2);
+
+			const taskUnixStartDate = new Date(task.taskStartUnix);
+			const taskUnixEndDate = new Date(task.taskEndUnix);
+
+			const taskStartTimeLabel = `${timePadding(taskUnixStartDate.getHours())}:${timePadding(
+				taskUnixStartDate.getMinutes()
+			)}`;
+			const taskEndTimeLabel = `${timePadding(taskUnixEndDate.getHours())}:${timePadding(
+				taskUnixEndDate.getMinutes()
+			)}`;
 
 			if (dataMember.active === true) {
 				out.push({
 					name: dataMember.name,
-					chunkHeight: chunkHeightPercentage,
+					chunkHeight: chunkHeightP2,
 					chunkTop: chunkTop,
-					color: dataMember.color
+					color: dataMember.color,
+					taskStartTimeLabel: taskStartTimeLabel,
+					taskEndTimeLabel: taskEndTimeLabel
 				});
 			}
 		}
@@ -413,7 +429,7 @@
 		transitions={getTransition(6)}
 		figmaImport={{ mobile: { top: 279, left: 12, width: 336, height: 302 } }}
 	>
-		<DayTimelineChart chunks={dayTimelineChartData}></DayTimelineChart>
+		<DayTimelineChart chunks={dayTimelineChartData} />
 	</Box>
 {/if}
 
