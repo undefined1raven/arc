@@ -190,19 +190,20 @@
 						height="50%"
 						text={task.category}
 						style="right: 2%;"
+						verticalFont={$globalStyle.smallMobileFont}
 						backgroundColor="{$globalStyle.activeColor}20"
 						desktopFont={$globalStyle.mediumDesktopFont}
-						color={$globalStyle.activeColor}
+						color={$globalStyle.activeMono}
 						borderRadius="3px"
 					/>
 					<Label
-						width="35%"
+						width="25%"
 						height="50%"
-						verticalFont={$globalStyle.mediumMobileFont}
+						verticalFont={$globalStyle.smallMobileFont}
 						style="right: 30%;"
 						text="{getTime(task.taskStartUnix)}-{getTime(task.taskEndUnix)}"
 						backgroundColor="{$globalStyle.activeColor}20"
-						color={$globalStyle.activeColor}
+						color={$globalStyle.activeMono}
 						desktopFont={$globalStyle.mediumDesktopFont}
 						borderRadius="3px"
 					/>
@@ -248,13 +249,15 @@
 		/>
 	{/if}
 </Box>
-<Label
-	desktopFont={$globalStyle.smallDesktopFont}
-	text={getDateTimeDisplayInfo($dayViewSelectedDay.dayStartUnix).displayDate}
-	figmaImport={{ desktop: { top: 25, left: '50%' } }}
-	horizontalCenter={true}
-/>
 
+{#if isMobile() === false}
+	<Label
+		desktopFont={$globalStyle.smallDesktopFont}
+		text={getDateTimeDisplayInfo($dayViewSelectedDay.dayStartUnix).displayDate}
+		figmaImport={{ desktop: { top: 25, left: '50%' } }}
+		horizontalCenter={true}
+	/>
+{/if}
 <Box
 	style="border-top: solid 1px {$globalStyle.activeColor}"
 	figmaImport={{ mobile: { top: 384 + topOffset, width: width, height: 185, left: '50%' } }}
@@ -285,7 +288,7 @@
 						height="80%"
 						left="0%"
 						text={category.name}
-						color={$globalStyle.activeMono}
+						color={$globalStyle.ac}
 						style="padding-left: 2%; padding-right: 2%; justify-content: start; text-align: start;"
 						backgroundColor="{$globalStyle.activeColor}20"
 						borderRadius="5px"
@@ -314,7 +317,11 @@
 >
 <Button
 	onClick={() => {
-		window.location.hash = '#logs';
+		if ($dayViewSelectedDay.status === 'pending') {
+			window.location.hash = '#home';
+		} else {
+			window.location.hash = '#logs';
+		}
 	}}
 	label="Back"
 	color={$globalStyle.secondaryMono}

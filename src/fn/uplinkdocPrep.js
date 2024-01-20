@@ -19,6 +19,38 @@ function handleEncryptionError(e) {
 async function getUplinkDoc(categories, tasks, tasksLog, days, updateCache) {
     return importSymmetricKey(JSON.parse(localStorage.getItem('simkey')))
         .then(async (simkey) => {
+            const chunkSize = 500;
+            const chunkNumber = Math.ceil(tasksLog.length / chunkSize);
+
+            let chunkedTasksLog = [];
+
+            for (let ix = 1; ix <= chunkNumber; ix++) {
+                chunkedTasksLog.push([]);
+            }
+
+            for (let ix = 0; ix < tasksLog.length; ix++) {
+                const chunkIndex = Math.floor(ix / chunkSize);
+                chunkedTasksLog[chunkIndex].push(tasksLog[ix]);
+            }
+
+            let encryptionPromises = [];
+
+            for (let ix = 0; ix < chunkedTasksLog.length; ix++) {
+                encryptionPromises.push(symmetricEncrypt(JSON.stringify(chunkedTasksLog[ix]), simkey));
+            }
+
+            let encryptedChunkedTasksLog = [];
+
+            Promise.allSettled(encryptionPromises).then(results => {
+                results.forEach(encryptedChunk => {
+                    encryptedChunkedTasksLog.push(encryptedChunk.value);
+                    if (encryptedChunk.status === 'fulfilled') {
+                    }
+                })
+            }).catch((e) => {
+                handleEncryptionError(e);
+            });
+
             let uplinkDoc = {};
             await symmetricEncrypt(JSON.stringify(categories), simkey)
                 .then((result) => {
@@ -41,13 +73,9 @@ async function getUplinkDoc(categories, tasks, tasksLog, days, updateCache) {
                 .catch((e) => {
                     handleEncryptionError(e);
                 });
-            await symmetricEncrypt(JSON.stringify(tasksLog), simkey)
-                .then((result) => {
-                    uplinkDoc['tasksLog'] = { cipher: result.cipher, iv: result.iv };
-                })
-                .catch((e) => {
-                    handleEncryptionError(e);
-                });
+
+            uplinkDoc['tasksLog'] = encryptedChunkedTasksLog;
+
             uplinkDoc['tx'] = Date.now();
             if (updateCache === true) {
                 try {

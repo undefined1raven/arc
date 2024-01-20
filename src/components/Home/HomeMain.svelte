@@ -70,6 +70,7 @@
 		'#dataExplorer': DataExplorerMain
 	};
 
+
 	async function processEncrypted(encryptedObj, key, allowUpdatesValue) {
 		leo = JSON.stringify(encryptedObj);
 		const encrypted = encryptedObj;
@@ -92,21 +93,35 @@
 				console.log(e);
 			}
 		});
-		await symmetricDecrypt(encrypted.tasksLog.cipher, key, encrypted.tasksLog.iv).then(
-			(decrypted) => {
-				try {
-					let decryptedTasksLog = JSON.parse(decrypted);
-					if ($tasksLog.length > decryptedTasksLog.length) {
-						for (let ix = $tasksLog.length - decryptedTasksLog.length; ix > 0; ix--) {
-							decryptedTasksLog.push($tasksLog[$tasksLog.length - ix]);
+
+		let encryptedChunkedTasksLog = encrypted.tasksLog;
+		let chunkedTasksLogDecryptionPromises = [];
+		for (let ix = 0; ix < encryptedChunkedTasksLog.length; ix++) {
+			const chunk = encryptedChunkedTasksLog[ix];
+			const cipher = chunk.cipher;
+			const iv = chunk.iv;
+			chunkedTasksLogDecryptionPromises.push(symmetricDecrypt(cipher, key, iv));
+		}
+
+		let decryptedTasksLog = [];
+
+		Promise.allSettled(chunkedTasksLogDecryptionPromises)
+			.then((results) => {
+				results.forEach((result) => {
+					if (result.status === 'fulfilled') {
+						const chunk = JSON.parse(result.value);
+						for (let ix = 0; ix < chunk.length; ix++) {
+							decryptedTasksLog.push(chunk[ix]);
 						}
 					}
-					tasksLog.set(decryptedTasksLog);
-				} catch (e) {
-					console.log(e);
-				}
-			}
-		);
+				});
+			})
+			.catch((e) => {
+				console.log(`oh oh ${e}`);
+			});
+
+		tasksLog.set(decryptedTasksLog);
+
 		await symmetricDecrypt(encrypted.days.cipher, key, encrypted.days.iv).then((decrypted) => {
 			try {
 				const decryptedDays = JSON.parse(decrypted);

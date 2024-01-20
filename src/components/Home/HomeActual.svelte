@@ -65,6 +65,9 @@
 
 	let interval500ms;
 
+
+	$: console.log($tasksLog)
+
 	function updateWeekData() {
 		weekData = weekDataDefault;
 		const dayOfWeek = new Date().getDay();
@@ -328,7 +331,6 @@
 				// 		})
 				// 	);
 				// }
-
 				tasksLog.update((old) => {
 					return [
 						...old,

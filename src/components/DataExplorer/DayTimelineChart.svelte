@@ -87,7 +87,7 @@
 				text={chunk.name}
 				color={chunk.color}
 			/>
-			{#if chunk.chunkHeight > 0.0004 * chartTotalHeight}
+			<!-- {#if chunk.chunkHeight > 0.0004 * chartTotalHeight}
 				<Label
 					align="right"
 					left="104%"
@@ -111,7 +111,7 @@
 					text={chunk.taskEndTimeLabel}
 					color={chunk.color}
 				/>
-			{/if}
+			{/if} -->
 		</Box>
 	{/each}
 </Box>
