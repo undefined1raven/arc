@@ -14,7 +14,8 @@
 	import globalStyle from '../../stores/globalStyles';
 	import MenuItem from './MenuItem.svelte';
 	import StarDeco from '../deco/StarDeco.svelte';
-
+	import { getTransition } from '../../fn/getTransisitions';
+	
 	let rendered = false;
 	onMount(() => {
 		window.location.hash = '#home';
@@ -84,4 +85,17 @@
 		activeApp.set('star');
 	}}
 	top={448}
+/>
+
+<Label
+	width="80%"
+	top="92%"
+	horizontalCenter={true}
+	left="50%"
+	transitions={getTransition(2)}
+	backgroundColor="{$globalStyle.activeColor}20"
+	height="6%"
+	color={$globalStyle.activeMono}
+	verticalFont={$globalStyle.mediumMobileFont}
+	text="Swipe right (->) to bring up this menu at any time"
 />

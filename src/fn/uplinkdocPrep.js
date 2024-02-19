@@ -43,8 +43,8 @@ async function getUplinkDoc(categories, tasks, tasksLog, days, updateCache) {
 
             Promise.allSettled(encryptionPromises).then(results => {
                 results.forEach(encryptedChunk => {
-                    encryptedChunkedTasksLog.push(encryptedChunk.value);
                     if (encryptedChunk.status === 'fulfilled') {
+                        encryptedChunkedTasksLog.push(encryptedChunk.value);
                     }
                 })
             }).catch((e) => {

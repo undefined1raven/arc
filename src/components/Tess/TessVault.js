@@ -15,7 +15,7 @@ const currentDay = writable({
         L4: { x: 0, y: 0, color: '#BD00FF' },
         none: { x: 0, y: 0 }
     }
-});
+}); 
 
 const exfArray = writable([
     { EXFID: 'EXFID-1', event: 'Oversleeping', score: -300, show: true },

@@ -70,8 +70,7 @@
 		'#dataExplorer': DataExplorerMain
 	};
 
-
-	async function processEncrypted(encryptedObj, key, allowUpdatesValue) {
+	async function processEncrypted(encryptedObj, key, allowUpdatesValue, debugVal) {
 		leo = JSON.stringify(encryptedObj);
 		const encrypted = encryptedObj;
 		await symmetricDecrypt(encrypted.categories.cipher, key, encrypted.categories.iv).then(
@@ -120,7 +119,9 @@
 				console.log(`oh oh ${e}`);
 			});
 
-		tasksLog.set(decryptedTasksLog);
+		if ($tasksLog.length <= decryptedTasksLog.length) {
+			tasksLog.set(decryptedTasksLog);
+		}
 
 		await symmetricDecrypt(encrypted.days.cipher, key, encrypted.days.iv).then((decrypted) => {
 			try {
@@ -217,9 +218,14 @@
 		imported.set(true);
 		allowUpdates.set(allowUpdatesValue);
 		updateLabel.set('none');
+
+		console.log(`${((Date.now() - dt) / 1000).toFixed(5)}s from ${debugVal}`);
 	}
 
+	var dt = Date.now();
+
 	onMount(() => {
+		dt = Date.now();
 		if (localStorage.getItem('privateKey') === null || localStorage.getItem('simkey') === null) {
 			window.location.href = '/login';
 		} else {
@@ -230,7 +236,7 @@
 					keysStatus.set(1);
 					const cache = JSON.parse(localStorage.getItem('encryptedOfflineCache'));
 					if (cache !== null) {
-						processEncrypted(cache, key, false);
+						processEncrypted(cache, key, false, 'Local Cache');
 					}
 					fetch(domainGetter('/account/latest'), {
 						method: 'GET',
@@ -251,13 +257,13 @@
 										}
 										try {
 											if (responseData.encrypted.tx < cache.tx) {
-												processEncrypted(cache, key, true);
+												processEncrypted(cache, key, true, 'Fresh Cache Override');
 											} else {
 												localStorage.setItem(
 													'encryptedOfflineCache',
 													JSON.stringify(responseData.encrypted)
 												);
-												processEncrypted(responseData.encrypted, key, true);
+												processEncrypted(responseData.encrypted, key, true, 'DB Response 1 ');
 											}
 										} catch (e) {
 											console.log(e);
@@ -265,7 +271,7 @@
 												'encryptedOfflineCache',
 												JSON.stringify(responseData.encrypted)
 											);
-											processEncrypted(responseData.encrypted, key, true);
+											processEncrypted(responseData.encrypted, key, true, 'DB Response 2');
 										}
 									}
 								})
@@ -284,7 +290,8 @@
 								processEncrypted(
 									JSON.parse(localStorage.getItem('encryptedOfflineCache')),
 									key,
-									true
+									true,
+									'Cache Catch'
 								);
 							});
 						});
@@ -293,12 +300,6 @@
 					keysStatus.set(0);
 					console.log(err);
 				});
-
-			let cachedCurrentActivity = localStorage.getItem('currentActivity');
-
-			if (cachedCurrentActivity !== null) {
-				currentActivity.set(JSON.parse(cachedCurrentActivity));
-			}
 		}
 	});
 

@@ -35,6 +35,7 @@
 	let hoverOpacityMin = 20;
 	let hoverOpacityMax = 40;
 	let left;
+	let readonly = false;
 	let transitions = {};
 	let horizontalFont;
 	let verticalFont = lglobalStyles.regularMobileFont;
@@ -156,6 +157,7 @@
 		onTouchStart,
 		onTouchEnd,
 		show,
+		readonly,
 		tabletWidth,
 		desktopFont,
 		fontType,
@@ -179,6 +181,7 @@
 <svelte:window on:resize={onResize} />
 {#if show}
 	<textarea
+		{readonly}
 		in:inFunc={inOptions}
 		out:outFunc={outOptions}
 		{placeholder}

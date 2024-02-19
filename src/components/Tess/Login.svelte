@@ -16,6 +16,8 @@
 	import { download } from '../../fn/download';
 	import { getAccountKeyPayload } from '../../fn/getAccountKeyPayload';
 	import { processEncryptedTess } from './fn/processEncryptedTess';
+	import { getTransition } from '../../fn/getTransisitions';
+
 	import {
 		currentDay,
 		exfArray,
@@ -25,7 +27,6 @@
 		projects,
 		statusArray
 	} from './TessVault';
-	import Page from '../../routes/+page.svelte';
 	import { validateInput } from '../../fn/validateInput';
 	import isMobile from '../../fn/isMobile';
 
@@ -225,6 +226,30 @@
 			height="70%"
 			left="50%"
 			style="transform: translate(-50%);"
+		/>
+		<Label
+			width="80%"
+			top="89%"
+			horizontalCenter={true}
+			left="50%"
+			transitions={getTransition(1)}
+			backgroundColor="{$globalStyle.activeColor}20"
+			height="4%"
+			color={$globalStyle.activeMono}
+			verticalFont={$globalStyle.mediumMobileFont}
+			text="Enter your PIN"
+		/>
+		<Label
+			width="80%"
+			transitions={getTransition(2)}
+			top="94%"
+			horizontalCenter={true}
+			left="50%"
+			backgroundColor="{$globalStyle.activeColor}20"
+			height="4%"
+			color={$globalStyle.activeMono}
+			verticalFont={$globalStyle.mediumMobileFont}
+			text="Tap anywhere for keypad"
 		/>
 	{/if}
 	{#if mode !== 'fail'}

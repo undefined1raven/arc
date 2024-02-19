@@ -2,6 +2,7 @@
 	import Button from '../common/Button.svelte';
 	import Label from '../common/Label.svelte';
 	import { getTransition } from '../../fn/getTransisitions';
+	import { chunkArray } from '../../fn/chunkArray';
 	import globalStyle from '../../stores/globalStyles';
 	import Box from '../common/Box.svelte';
 	import { categories, tasks, tasksLog } from '../../stores/dayViewSelectedDay';
@@ -17,8 +18,29 @@
 	import { HeatmapChart, DonutChart } from '@carbon/charts';
 	import VerticalLine from '../common/VerticalLine.svelte';
 	import { fly } from 'svelte/transition';
+	import { getAverageTaskStartTime } from './explorerGetAverageTaskStartTime';
+	import DropdownDeco from '../deco/DropdownDeco.svelte';
 
 	let displayMode = 'data'; //data | charts
+	let selectedAverageType = 'duration'; //duration | startTime | endTime
+	const selectedAvgTypeToLabel = {
+		duration: 'Average Duration',
+		startTime: 'Average Start Time',
+		endTime: 'Average End Time'
+	};
+
+	let dailyStatsViewCurrentChunkIndex = 0;
+
+	function getAvgValueFromType(dataMember, ix, selectedAverageType) {
+		let taskStats = averageTaskStartAndEndStats[ix];
+		if (selectedAverageType === 'duration') {
+			return computeDayilyAverage(dataMember);
+		} else if (selectedAverageType === 'startTime') {
+			return taskStats.avgTaskStart;
+		} else if (selectedAverageType === 'endTime') {
+			return taskStats.avgTaskEnd;
+		}
+	}
 
 	function getDataMembersNamesFromExplorerParams(explorerParams) {
 		let dataMemberNames = [];
@@ -77,6 +99,8 @@
 	let flatennedDailyNaNAppendedBreakdownArray = {}; /// used for the actual daily grid display
 	let durationTotalsByTask = {}; //global duration totals for each task
 	// let taskIDMonthPairs = [];
+
+	$: averageTaskStartAndEndStats = getAverageTaskStartTime(filteredTasks, dataMemberNames);
 
 	function getDailyBreakdownArray() {
 		for (let ix = 0; ix < filteredTasks.length; ix++) {
@@ -317,6 +341,15 @@
 	}
 
 	$: syncSelectedDataMembersWithDisplayArray(dailyViewsDisplayArray);
+	$: chunkedDailyViewsDisplayArray = chunkArray(15, dailyViewsDisplayArray);
+
+	function validateArr(array) {
+		if (array !== undefined) {
+			return array;
+		} else {
+			return [];
+		}
+	}
 </script>
 
 {#if displayMode === 'data'}
@@ -335,13 +368,29 @@
 		)} - {getDisplayDateFromUnix($dataExplorerParams.timeframe.endUnix)}"
 		backgroundColor="{$globalStyle.activeColor}20"
 	/>
-	<Label
+	<Button
 		align="left"
 		alignPadding="2%"
 		transitions={getTransition(2)}
 		verticalFont={$globalStyle.smallMobileFont}
 		figmaImport={{ mobile: { top: 147, left: 12, width: 102, height: 25 } }}
-		text="Average"
+		label={selectedAvgTypeToLabel[selectedAverageType]}
+		onClick={() => {
+			switch (selectedAverageType) {
+				case 'duration':
+					selectedAverageType = 'startTime';
+					break;
+				case 'startTime':
+					selectedAverageType = 'endTime';
+					break;
+				case 'endTime':
+					selectedAverageType = 'duration';
+					break;
+				default:
+					selectedAverageType = 'startTime';
+					break;
+			}
+		}}
 		backgroundColor="{$globalStyle.activeColor}20"
 	/>
 	<!--box used as line-->
@@ -412,7 +461,7 @@
 				style="margin-right: 2%; min-width: 40%;"
 			>
 				<Label
-					text={computeDayilyAverage(dataMember)}
+					text={getAvgValueFromType(dataMember, ix, selectedAverageType)}
 					width="100%"
 					height="100%"
 					style="padding: 5%;"
@@ -462,8 +511,8 @@
 
 	<div id="map" />
 
-	<List figmaImport={{ mobile: { top: 221, left: 12, width: 336, height: 356 } }}>
-		{#each dailyViewsDisplayArray as dayStats, ix}
+	<List figmaImport={{ mobile: { top: 221, left: 12, width: 336, height: 315 } }}>
+		{#each validateArr(chunkedDailyViewsDisplayArray[dailyStatsViewCurrentChunkIndex]) as dayStats, ix}
 			<ListItem
 				transitions={getTransition(ix + 1)}
 				style="min-height: 7%; max-height: 7%;"
@@ -519,10 +568,47 @@
 			</ListItem>
 		{/each}
 	</List>
+
+	<Label
+		transitions={{ in: { func: fly, options: { duration: 200, y: '35%' } } }}
+		verticalFont={$globalStyle.mediumMobileFont}
+		text="{dailyStatsViewCurrentChunkIndex + 1}/{chunkedDailyViewsDisplayArray.length}"
+		figmaImport={{ mobile: { top: 547, width: 106, height: 31, left: 127 } }}
+		backgroundColor="{$globalStyle.activeColor}20"
+	/>
+	<Button
+		onClick={() => {
+			if (dailyStatsViewCurrentChunkIndex > 0) {
+				dailyStatsViewCurrentChunkIndex--;
+			}
+		}}
+		transitions={{ in: { func: fly, options: { duration: 200, x: '35%' } } }}
+		verticalFont={$globalStyle.mediumMobileFont}
+		figmaImport={{ mobile: { top: 547, width: 107, height: 31, left: 12 } }}
+		isSelected={dailyStatsViewCurrentChunkIndex > 0}
+		backgroundColor="{$globalStyle.activeColor}20"><DropdownDeco width="80%" height="70%" /></Button
+	>
+	<Button
+		onClick={() => {
+			if (dailyStatsViewCurrentChunkIndex < chunkedDailyViewsDisplayArray.length - 1) {
+				dailyStatsViewCurrentChunkIndex++;
+			}
+		}}
+		transitions={{ in: { func: fly, options: { duration: 200, x: '-35%' } } }}
+		verticalFont={$globalStyle.mediumMobileFont}
+		figmaImport={{ mobile: { top: 547, width: 107, height: 31, left: 241 } }}
+		backgroundColor="{$globalStyle.activeColor}20"
+		isSelected={dailyStatsViewCurrentChunkIndex < chunkedDailyViewsDisplayArray.length - 1}
+		><DropdownDeco width="80%" height="70%" style="transform: rotate(180deg);" /></Button
+	>
 {/if}
 
 {#if displayMode === 'charts'}
-	<ExplorerCharts dataMembers={dataMemberNames} {dailyViewsDisplayArray} dailyBreakdownMap={dailyBreakdownArray} />
+	<ExplorerCharts
+		dataMembers={dataMemberNames}
+		{dailyViewsDisplayArray}
+		dailyBreakdownMap={dailyBreakdownArray}
+	/>
 {/if}
 
 <Button

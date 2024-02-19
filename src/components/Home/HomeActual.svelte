@@ -31,6 +31,13 @@
 	import SearchDeco from '../deco/SearchDeco.svelte';
 	import isMobile from '../../fn/isMobile';
 	import { activeApp } from '../../stores/activeApp';
+	import SwipeBox from '../common/Mobile/SwipeBox.svelte';
+	import Login from '../SID/Login.svelte';
+	import LogsMain from '../Logs/LogsMain.svelte';
+	import SidDeco from '../deco/SIDDeco.svelte';
+	import TaskController from './TaskController.svelte';
+	import Layout from '../../routes/+layout.svelte';
+	import AddDeco from '../deco/AddDeco.svelte';
 
 	let isColorBoxBeingShown = false;
 
@@ -43,6 +50,8 @@
 		{ day: 'Fri', status: 'upcoming', routine: true, tasks: true, ini: false },
 		{ day: 'Sat', status: 'upcoming', routine: true, tasks: true, ini: false }
 	];
+
+	let displayTaskIndex = 0;
 
 	$: weekData = [
 		{ day: 'Sun', status: 'upcoming', routine: true, tasks: true, ini: false },
@@ -64,10 +73,7 @@
 	};
 
 	let interval500ms;
-
-
-	$: console.log($tasksLog)
-
+	let taskControllersFlicker = true;
 	function updateWeekData() {
 		weekData = weekDataDefault;
 		const dayOfWeek = new Date().getDay();
@@ -109,10 +115,10 @@
 	});
 
 	onMount(() => {
+		setTimeout(() => {}, 30);
 		window.location.hash = 'home';
 		interval500ms = setInterval(() => {
 			setUntrackedTimeLabel();
-			setTrackedTimeLabel();
 		}, 500);
 		updateWeekData();
 	});
@@ -140,7 +146,6 @@
 	$: currentActivityDockStatus = $currentActivity === null ? 'inactive' : 'active';
 
 	var untrackedTimeLabel = '';
-	var trackedTimeLabel = '';
 	let taskPickingMode = false;
 
 	function setUntrackedTimeLabel() {
@@ -156,22 +161,6 @@
 				' | Untracked Time';
 		} else {
 			untrackedTimeLabel = '';
-		}
-	}
-
-	function setTrackedTimeLabel() {
-		if ($currentActivity !== null) {
-			if ($currentActivity.taskStartUnix > 0) {
-				let timeDelta = Date.now() - $currentActivity.taskStartUnix;
-				trackedTimeLabel =
-					timePadding(Math.floor(timeDelta / 1000 / 60 / 60)) +
-					':' +
-					timePadding(Math.floor(timeDelta / 1000 / 60) % 60) +
-					':' +
-					timePadding((Math.floor(timeDelta / 1000) % 60) % 60);
-			} else {
-				trackedTimeLabel = '';
-			}
 		}
 	}
 </script>
@@ -255,6 +244,7 @@
 	</ul></Box
 >
 <Box
+	id="currentActivitiesContainer"
 	transitions={{
 		in: {
 			func: fly,
@@ -305,59 +295,57 @@
 		/>
 	{/if}
 	{#if currentActivityDockStatus === 'active'}
-		<Label
-			verticalFont={$globalStyle.largeMobileFont}
-			text={trackedTimeLabel}
-			color={$globalStyle.activeMono}
+		<SwipeBox
+			id="swipeBox"
+			swipeDirection="vertical"
+			maxIndex={$currentActivity.length}
+			indexMode={true}
 			width="100%"
-			left="0%"
-			top="10%"
+			on:selectedIndexChange={(e) => {
+				displayTaskIndex = e.detail;
+			}}
+			figmaImport={{ mobile: { top: '0', left: '0', width: '100%', height: '100%' } }}
+			figmaImportConfig={{ containerHeight: 168, containerWidth: 350 }}
 		/>
-		<Label
-			verticalFont="22px"
-			text={$tasks.find((task) => task.id === $currentActivity.taskID)?.name}
-			color={$globalStyle.activeMono}
-			width="100%"
-			left="0%"
-			top="40%"
-		/>
+		{#if taskControllersFlicker === true}
+			{#each $currentActivity as activity, ix}
+				<TaskController
+					on:onTaskEnd={() => {
+						taskControllersFlicker = false;
+						displayTaskIndex = 0;
+						setTimeout(() => {
+							taskControllersFlicker = true;
+						}, 20);
+					}}
+					{ix}
+					currentActivity={activity}
+					show={ix === displayTaskIndex}
+				/>
+			{/each}
+		{/if}
+		{#if $currentActivity.length > 1}
+			<Label
+				left="2%"
+				transitions={getTransition(2)}
+				top="7%"
+				verticalFont={$globalStyle.mediumMobileFont}
+				text="[{displayTaskIndex + 1}/{$currentActivity.length}]"
+			/>
+		{/if}
 		<Button
 			onClick={() => {
-				// if ($RTC.publish) {
-				// 	$RTC.publish(
-				// 		localStorage.getItem('accountID'),
-				// 		JSON.stringify({
-				// 			currentActivityUpdate: 'null'
-				// 		})
-				// 	);
-				// }
-				tasksLog.update((old) => {
-					return [
-						...old,
-						{
-							taskID: $currentActivity.taskID,
-							taskStartUnix: $currentActivity.taskStartUnix,
-							taskEndUnix: Date.now()
-						}
-					];
-				});
-				localStorage.setItem('currentActivity', 'null');
-				currentActivity.set(null);
+				taskPickingMode = true;
 			}}
-			onSelect={() => {
-				isColorBoxBeingShown = true;
-			}}
-			width="90%"
-			height="22%"
-			label="Done"
-			desktopFont={$globalStyle.mediumDesktopFont}
+			width="5vh"
+			height="5vh"
+			style="right: 1%;"
 			hoverOpacityMin={0}
 			hoverOpacityMax={20}
-			left="5%"
-			top="70%"
-		/>
+			top="2%"><AddDeco width="60%" height="40%" color={$globalStyle.activeMono} /></Button
+		>
 	{/if}
 </Box>
+
 <Button
 	transitions={getTransition(5)}
 	onClick={() => {
@@ -372,21 +360,7 @@
 	hoverOpacityMax={20}
 	horizontalCenter={true}
 />
-<!-- <Box
-	transitions={{
-		in: {
-			func: fly,
-			options: {
-				delay: 300,
-				duration: 400,
-				y: '-2%'
-			}
-		}
-	}}
-	figmaImport={{ mobile: { top: 533, left: '50%', width: 350, height: 40 } }}
-	horizontalCenter={true}
-	backgroundColor="{$globalStyle.activeColor}10"
-/> -->
+
 <MenuBar />
 
 {#if taskPickingMode === true}
@@ -419,7 +393,14 @@
 						transitions={getTransition(ix, 20)}
 						onClick={() => {
 							const currentActivityPayload = { taskID: task.id, taskStartUnix: Date.now() };
-							currentActivity.set(currentActivityPayload);
+							if ($currentActivity === null) {
+								currentActivity.set([currentActivityPayload]);
+							} else {
+								currentActivity.update((prev) => {
+									prev = [...prev, currentActivityPayload];
+									return prev;
+								});
+							}
 							taskPickerSearchInput = '';
 							if ($RTC.publish !== undefined) {
 								// $RTC.publish(

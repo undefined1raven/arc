@@ -105,54 +105,63 @@
 		touchStart.set(e.touches);
 	}}
 />
-{#if window.location.pathname !== '/login' && window.location.pathname !== '/create'}
-	{#if $updateLabel === '[Syncing]' && isMobile() === true}
+
+{#if isMobile() === true}
+	{#if window.location.pathname !== '/login' && window.location.pathname !== '/create' && window.location.pathname !== '/remote'}
+		{#if $updateLabel === '[Syncing]' && isMobile() === true}
+			<Box
+				width="100%"
+				height="95%"
+				top="5%"
+				backgroundColor="#000000CC"
+				backdropFilter="blur(5px)"
+				style="z-index: 500;"
+				left="0%"><SyncingDeco width="50%" height="50%" color={$globalStyle.activeColor} /></Box
+			>
+		{/if}
 		<Box
-			width="100%"
-			height="95%"
-			top="5%"
-			backgroundColor="#000000CC"
-			backdropFilter="blur(5px)"
-			style="z-index: 500;"
-			left="0%"><SyncingDeco width="50%" height="50%" color={$globalStyle.activeColor} /></Box
+			transitions={{
+				in: { func: fly, options: { duration: 400, y: '-2%' } }
+			}}
+			figmaImport={{ mobile: { top: '0%', height: 19, width: '100%', left: '0%' } }}
 		>
-	{/if}
-	<Box
-		transitions={{
-			in: { func: fly, options: { duration: 400, y: '-2%' } }
-		}}
-		figmaImport={{ mobile: { top: '0%', height: 19, width: '100%', left: '0%' } }}
-	>
-		{#if $activeApp === 'arc'}
-			<Logo top="10%" width="100%" height="90%" left="0%" color={$globalStyle.activeColor} />
-		{/if}
-		{#if $activeApp === 'sid'}
-			<SidDeco width="20%" height="100%" />
-		{/if}
-		{#if $activeApp === 'tess'}
-			<TessDeco width="20%" height="100%" />
-		{/if}
-		{#if $activeApp === 'star'}
-			<StarDeco color={$globalStyle.activeMono} width="20%" height="100%" />
-		{/if}
-		{#if $activeApp === 'menu'}
-			<Label
-				text="---SELECT---"
+			{#if $activeApp === 'arc'}
+				<Logo top="10%" width="100%" height="90%" left="0%" color={$globalStyle.activeColor} />
+			{/if}
+			{#if $activeApp === 'sid'}
+				<SidDeco width="20%" height="100%" />
+			{/if}
+			{#if $activeApp === 'tess'}
+				<TessDeco width="20%" height="100%" />
+			{/if}
+			{#if $activeApp === 'star'}
+				<StarDeco color={$globalStyle.activeMono} width="20%" height="100%" />
+			{/if}
+			{#if $activeApp === 'menu'}
+				<Label
+					text="---SELECT---"
+					color={$globalStyle.activeColor}
+					verticalFont={$globalStyle.mediumMobileFont}
+				/>
+			{/if}
+			<HorizontalLine
+				top="110%"
+				style="background: radial-gradient(50% 50.00% at 50% 50.00%, {$globalStyle.activeColor} 0%, {$globalStyle.activeColor}20 100%);"
+				width="100%"
+				height="10%"
+				left="0%"
 				color={$globalStyle.activeColor}
-				verticalFont={$globalStyle.mediumMobileFont}
 			/>
-		{/if}
-		<HorizontalLine
-			top="110%"
-			style="background: radial-gradient(50% 50.00% at 50% 50.00%, {$globalStyle.activeColor} 0%, {$globalStyle.activeColor}20 100%);"
-			width="100%"
-			height="10%"
-			left="0%"
-			color={$globalStyle.activeColor}
-		/>
-		<NetworkIndicator />
-		<KeysIndicator />
-		<!-- {#if $updateLabel !== 'none'}
+			<NetworkIndicator />
+			<KeysIndicator />
+			<Label
+				verticalFont={$globalStyle.smallMobileFont}
+				text="WNX-532"
+				height="100%"
+				left="0%"
+				color={$globalStyle.inactiveColor}
+			/>
+			<!-- {#if $updateLabel !== 'none'}
 			<div out:fade={{ duration: 200 }}>
 				<Box
 					transitions={{
@@ -178,5 +187,6 @@
 				</Box>
 			</div>
 		{/if} -->
-	</Box>
+		</Box>
+	{/if}
 {/if}

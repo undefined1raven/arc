@@ -7,6 +7,9 @@
 	import FigmaImporter from '../../../fn/figmaImporter';
 	import globalStyle from '../../../stores/globalStyles';
 	import getFigmaImportConfig from '../../../config/FigmaImportConfig';
+	import { createEventDispatcher } from 'svelte';
+	const dispatch = createEventDispatcher();
+
 	let figmaImport = {};
 	let figmaImportConfig = { ...getFigmaImportConfig() };
 	let lnotSignedInMenuState = {};
@@ -19,7 +22,20 @@
 	let height;
 	let top;
 	let left;
+	let swipeDirection = 'horizontal'; //'horizontal' | 'vertical'
 	let renderedComponent = Label;
+	let horizontalActionThreshold = 0.02 * document.documentElement.clientHeight;
+	let verticalActionThreshold = 0.02 * document.documentElement.clientHeight;
+	let indexMode = true;
+	let maxIndex = 0;
+
+	function onSelectedIndexChange(selectedIndex) {
+		dispatch('selectedIndexChange', selectedIndex);
+	}
+	$: onSelectedIndexChange(selectedIndex);
+
+	$: actionThreshold =
+		swipeDirection === 'horizontal' ? horizontalActionThreshold : verticalActionThreshold;
 	onMount(() => {
 		if (componentArray.length > 1) {
 			selectedIndex = 1;
@@ -31,12 +47,33 @@
 			ltouchStart = { x: touches[0].clientX, y: touches[0].clientY };
 		});
 		let delta = 0;
-		let actionThreshold = 0.02 * document.documentElement.clientHeight;
+
 		touchMove.subscribe((touches) => {
 			lastTouchMoveUnix = Date.now();
 			ltouchMove = { x: touches[0].clientX, y: touches[0].clientY };
-			delta = ltouchStart.x - ltouchMove.x;
+			if (swipeDirection === 'horizontal') {
+				delta = ltouchStart.x - ltouchMove.x;
+			} else {
+				delta = ltouchStart.y - ltouchMove.y;
+			}
 		});
+
+		function onProcessTouchEnd(maxIndex) {
+			if (delta > 0) {
+				if (selectedIndex + 1 < maxIndex) {
+					selectedIndex++;
+				} else {
+					selectedIndex = 0;
+				}
+			} else {
+				if (selectedIndex - 1 >= 0) {
+					selectedIndex--;
+				} else {
+					selectedIndex = maxIndex - 1;
+				}
+			}
+		}
+
 		touchEnd.subscribe((event) => {
 			if (
 				Math.abs(delta) > actionThreshold &&
@@ -44,19 +81,16 @@
 				lnotSignedInMenuState.visible != true &&
 				Math.abs(Date.now() - lastTouchMoveUnix) < 70
 			) {
-				if (delta > 0) {
-					if (selectedIndex + 1 < componentArray.length) {
-						selectedIndex++;
-					} else {
-						selectedIndex = 0;
-					}
-				} else {
-					if (selectedIndex - 1 >= 0) {
-						selectedIndex--;
-					} else {
-						selectedIndex = componentArray.length - 1;
-					}
-				}
+				onProcessTouchEnd(componentArray.length);
+			}
+			if (
+				Math.abs(delta) > actionThreshold &&
+				Math.abs(Date.now() - lastTouchMoveUnix) < 70 &&
+				indexMode === true &&
+				isNaN(maxIndex) === false &&
+				maxIndex >= 0
+			) {
+				onProcessTouchEnd(maxIndex);
 			}
 		});
 	});
@@ -82,7 +116,19 @@
 		}
 	}
 
-	export { componentArray, id, figmaImport, figmaImportConfig, width, height, top, left };
+	export {
+		componentArray,
+		id,
+		figmaImport,
+		figmaImportConfig,
+		width,
+		height,
+		top,
+		left,
+		swipeDirection,
+		maxIndex,
+		indexMode
+	};
 </script>
 
 <div

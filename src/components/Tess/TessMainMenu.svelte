@@ -16,6 +16,10 @@
 	import Ex7Deco from '../deco/EX7Deco.svelte';
 	import PmmDeco from '../deco/PMMDeco.svelte';
 	import isMobile from '../../fn/isMobile';
+
+	onMount(() => {
+		activeTessApp.set('ex7');
+	});
 </script>
 
 <Button

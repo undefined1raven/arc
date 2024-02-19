@@ -162,7 +162,6 @@
 			};
 
 			DBDeleteRequest.onsuccess = (event) => {
-				console.log('Database deleted successfully');
 				window.location.reload();
 			};
 		}}

@@ -1,12 +1,12 @@
 const donutBaseOptions = {
-    "title": "Donut",
-    "resizable": true,
-    "donut": {
-        "center": {
-            "label": "Browsers"
-        }
-    },
-    "height": "400px"
+	"title": "Donut",
+	"resizable": true,
+	"donut": {
+		"center": {
+			"label": "Browsers"
+		}
+	},
+	"height": "400px"
 };
 
 const horizontalFloatingBarBaseOptions = {
@@ -14,10 +14,10 @@ const horizontalFloatingBarBaseOptions = {
 	"axes": {
 		"left": {
 			"mapsTo": "value",
-			"scaleType": "linear"			
+			"scaleType": "linear"
 		},
 		"bottom": {
-            "mapsTo": "date",
+			"mapsTo": "date",
 			"scaleType": "time"
 		}
 	},
@@ -35,4 +35,28 @@ const horizontalStackedBarBaseOptions = {
 	},
 };
 
-export { donutBaseOptions, horizontalFloatingBarBaseOptions, horizontalStackedBarBaseOptions };
+const ex7heatmapOptions = {
+	"title": "Heatmap",
+	"axes": {
+		"left": {
+			"title": "",
+			"mapsTo": "day",
+			"scaleType": "labels"
+		},
+		"bottom": {
+			"title": "",
+			"mapsTo": "month",
+			"scaleType": "labels"
+		}
+	},
+	"heatmap": {
+		"colorLegend": {
+			"title": "",
+			"type": 'quantize',
+		},
+	},
+	"experimental": true,
+	"width": '90%'
+};
+
+export { donutBaseOptions, horizontalFloatingBarBaseOptions, horizontalStackedBarBaseOptions, ex7heatmapOptions };

@@ -19,7 +19,7 @@
 	import { download } from '../../fn/download';
 	import { getAccountKeyPayload } from '../../fn/getAccountKeyPayload';
 	import isMobile from '../../fn/isMobile';
-
+	import { getTransition } from '../../fn/getTransisitions';
 	let createPIN = '';
 	let createConfirmPIN = '';
 
@@ -202,6 +202,30 @@
 			height="70%"
 			left="50%"
 			style="transform: translate(-50%);"
+		/>
+		<Label
+			width="80%"
+			transitions={getTransition(1)}
+			top="89%"
+			horizontalCenter={true}
+			left="50%"
+			backgroundColor="{$globalStyle.activeColor}20"
+			height="4%"
+			color={$globalStyle.activeMono}
+			verticalFont={$globalStyle.mediumMobileFont}
+			text="Enter your PIN"
+		/>
+		<Label
+			width="80%"
+			transitions={getTransition(2)}
+			top="94%"
+			horizontalCenter={true}
+			left="50%"
+			backgroundColor="{$globalStyle.activeColor}20"
+			height="4%"
+			color={$globalStyle.activeMono}
+			verticalFont={$globalStyle.mediumMobileFont}
+			text="Tap anywhere for keypad"
 		/>
 	{/if}
 	{#if mode !== 'fail'}

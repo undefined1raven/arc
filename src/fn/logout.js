@@ -1,13 +1,8 @@
 import domainGetter from "./domainGetter";
 
 function logout() {
-    localStorage.removeItem('privateKey');
-    localStorage.removeItem('accountID');
-    localStorage.removeItem('simkey');
-    localStorage.removeItem('tess_simkey');
-    localStorage.removeItem('at');
+    localStorage.clear();
     window.location.href = '/login';
-
 }
 
 

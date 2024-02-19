@@ -56,6 +56,33 @@
 		});
 	}
 
+	let taskNames = [];
+	let filteredTaskNames = [];
+	let lastEditedTaskName = { taskID: '', name: '', ix: -1 };
+
+	function updateFilteredTaskNames(searchParm) {
+		filteredTaskNames = taskNames.filter((elm) => elm.includes(searchParm));
+	}
+
+	$: updateFilteredTaskNames(lastEditedTaskName.name);
+
+	async function getTaskNames(logs) {
+		const worker = new Worker('/getTaskNamesWorker.js');
+		worker.postMessage(JSON.stringify({ logs: logs }));
+		worker.onmessage = (e) => {
+			if (e.data.status === 'success' && e.data.error === undefined) {
+				taskNames = e.data.result;
+			}
+		};
+	}
+
+	onMount(() => {
+		getTaskNames($logs);
+		setTimeout(() => {
+			showStatusPicker = false;
+		}, 10);
+	});
+
 	let selectedTaskID = 'none';
 	let swipeStartedTaskID = { id: 'none', clientX: 0 };
 	touchStart.subscribe((s) => {
@@ -148,6 +175,12 @@
 		}
 
 		return { average: isNaN(average) ? 'UNK' : average, color: color };
+	}
+
+	$: if (filteredTaskNames.length < 50 && filteredTaskNames.length > 0) {
+		setTimeout(() => {
+			window.scrollTo(0, 0);
+		}, 10);
 	}
 </script>
 
@@ -286,7 +319,11 @@
 						<Textarea
 							on:onValue={(e) => {
 								$currentDay.tasks[ix]['name'] = e.detail;
+								lastEditedTaskName['name'] = e.detail;
+								lastEditedTaskName['taskID'] = task.id;
+								lastEditedTaskName['ix'] = ix;
 							}}
+							id={task.id}
 							className="task {task.id}"
 							color={getStatusObjFromID(task.statusID)?.color}
 							backgroundColor="{getStatusObjFromID(task.statusID)?.color}00"
@@ -402,6 +439,66 @@
 		</List>
 	</Box>
 {/if}
+
+{#if filteredTaskNames.length < 50 && filteredTaskNames.length > 0}
+	<Box
+		transitions={getTransition(1)}
+		figmaImport={{ mobile: { top: 120, left: '0', width: 360, height: 337 } }}
+	>
+		<Box backgroundColor="#000010CC" backdropFilter="blur(3px)" width="100%" height="100%" />
+		<Label
+			verticalFont={$globalStyle.mediumMobileFont}
+			transitions={getTransition(1)}
+			figmaImport={{ mobile: { left: 13, top: 6 } }}
+			text="Task Name"
+		/>
+		<Input
+			on:onValue={(e) => {
+				filteredTaskNames = taskNames.filter((elm) => elm.includes(e.detail));
+			}}
+			borderColor={$globalStyle.activeColor}
+			defaultValue={lastEditedTaskName.name}
+			bind:value={lastEditedTaskName.name}
+			paddingLeft="2%"
+			figmaImportConfig={{ containerHeight: 336, containerWidth: 359 }}
+			figmaImport={{ mobile: { left: 13, top: 28, width: 333, height: 37 } }}
+		/>
+		<List
+			figmaImportConfig={{ containerHeight: 336, containerWidth: 359 }}
+			figmaImport={{ mobile: { left: 13, top: 78, width: 333, height: 251 } }}
+		>
+			{#each filteredTaskNames as taskNameSuggestion, ix}
+				<ListItem
+					transitions={getTransition(ix + 1)}
+					width="100%"
+					height="15%"
+					style="min-height: 15%; max-height: 15%;"
+					marginBottom="4%"
+				>
+					<Button
+						onClick={() => {
+							const taskActiveTextarea = document.getElementById(lastEditedTaskName.taskID);
+							if (taskActiveTextarea !== undefined) {
+								taskActiveTextarea.value = taskNameSuggestion;
+								$currentDay.tasks[lastEditedTaskName.ix]['name'] = taskNameSuggestion;
+							}
+							filteredTaskNames = [];
+						}}
+						verticalFont={$globalStyle.mediumMobileFont}
+						align="left"
+						alignPadding="2%"
+						label={taskNameSuggestion}
+						width="100%"
+						height="100%"
+						hoverOpacityMin={0}
+						hoverOpacityMax={20}
+					/>
+				</ListItem>
+			{/each}
+		</List>
+	</Box>
+{/if}
+
 {#if showStatusPicker}
 	<StatusPicker
 		on:onBack={() => {

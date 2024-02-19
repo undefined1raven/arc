@@ -42,8 +42,6 @@
 		}
 	});
 
-	$: console.log($selectedDayObj)
-
 	$: restorable = Date.now() - $selectedDayObj.tx < 1000 * 60 * 60 * 24;
 </script>
 

@@ -252,8 +252,6 @@
 		return dailyViewsDisplayArray.find((elm) => elm.date === date) !== undefined;
 	}
 
-	$: console.log(dayTimelineChartData);
-
 	export { dataMembers, dailyViewsDisplayArray, dailyBreakdownMap };
 </script>
 
