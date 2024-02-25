@@ -134,7 +134,6 @@
 				await getSIDUplinkDoc($SIDs, $statusArray, $tessPIN.pin, true);
 			}
 		} else if (appID === 'tess') {
-			console.log('tess cache update');
 			lastStoreUpdateUnix = Date.now();
 			sent = false;
 			if ($tessPIN.pin !== 'none') {
@@ -216,7 +215,6 @@
 			} else if (appID === 'sid') {
 				uplinkdocResults = await getSIDUplinkDoc($SIDs, $statusArray, $tessPIN.pin, true);
 			} else if (appID === 'tess') {
-				console.log('tess uplink update');
 				uplinkdocResults = await getTessUplinkDoc(
 					$logs,
 					$currentDay,
@@ -227,7 +225,6 @@
 					$tessPIN.pin,
 					true
 				);
-				console.log(uplinkdocResults);
 			}
 			if (
 				uplinkdocResults !== undefined &&

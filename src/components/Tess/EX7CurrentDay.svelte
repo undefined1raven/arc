@@ -76,6 +76,21 @@
 		};
 	}
 
+	let tasksListScreenTopArray = [];
+
+	currentDay.subscribe((cd) => {
+		const tasks = cd.tasks;
+		setTimeout(() => {
+			tasksListScreenTopArray = [];
+			for (let ix = 0; ix < tasks.length; ix++) {
+				const taskID = tasks[ix].id;
+				const taskDOMElementTop = document.getElementById(taskID)?.getBoundingClientRect().top;
+				const taskDOMElementBottom = document.getElementById(taskID)?.getBoundingClientRect().bottom;
+				tasksListScreenTopArray.push({ taskID, taskDOMElementTop, taskDOMElementBottom });
+			}
+		}, 20);
+	});
+
 	onMount(() => {
 		getTaskNames($logs);
 		setTimeout(() => {
@@ -97,8 +112,42 @@
 		}
 	});
 
+	function swapTasksByIndex(initialIndex, finalIndex) {
+		if (
+			initialIndex < 0 ||
+			finalIndex < 0 ||
+			finalIndex >= $currentDay.tasks.length ||
+			initialIndex >= $currentDay.tasks.length
+		) {
+			console.log('One of the indexes is out of range');
+		} else {
+			let swapedItem1 = $currentDay.tasks[initialIndex];
+			let swapedItem2 = $currentDay.tasks[finalIndex];
+			if (swapedItem1 !== undefined && swapedItem2 !== undefined) {
+				currentDay.update((cd) => {
+					cd.tasks[initialIndex] = swapedItem2;
+					cd.tasks[finalIndex] = swapedItem1;
+					return cd;
+				});
+			}
+		}
+	}
+
 	touchMove.subscribe((tm) => {
 		if (showLAtrributesEditor === false) {
+			const selectedTaskIndex = $currentDay.tasks.findIndex(
+				(elm) => elm.id === swipeStartedTaskID.id
+			);
+
+			if (tasksListScreenTopArray[selectedTaskIndex - 1]?.taskDOMElementBottom > tm[0].clientY) {
+				swapTasksByIndex(selectedTaskIndex, selectedTaskIndex - 1);
+			}
+			if (tasksListScreenTopArray[selectedTaskIndex + 1]?.taskDOMElementTop < tm[0].clientY) {
+				swapTasksByIndex(selectedTaskIndex, selectedTaskIndex + 1);
+			}
+
+			// console.log(tasksListScreenTopArray[selectedTaskIndex - 1]?.taskDOMElementTop, tm[0].clientY);
+
 			let delta = swipeStartedTaskID.clientX - tm[0].clientX;
 			if (delta > 0.2 * $screenSize.width) {
 				selectedTaskID = swipeStartedTaskID.id;
@@ -298,9 +347,10 @@
 			{#if $currentDay.tasks.length === 0}
 				<Button onClick={addTask} label="Add task" top="20%" width="80%" height="15%" />
 			{/if}
-			{#each $currentDay.tasks as task, ix}
+			{#each $currentDay.tasks as task, ix (task.id)}
 				<ListItem
 					className="task {task.id}"
+					id={task.id}
 					style="min-height: 15%;"
 					marginBottom="4%"
 					marginTop="0%"
@@ -308,7 +358,9 @@
 					height="15%"
 				>
 					<Box
-						onSelected={() => {}}
+						onSelected={() => {
+							swapTasksByIndex(ix, ix - 1);
+						}}
 						width="100%"
 						height="100%"
 						className="task {task.id}"
