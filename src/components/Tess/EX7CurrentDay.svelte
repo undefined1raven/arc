@@ -19,7 +19,7 @@
 	import Input from '../common/Input.svelte';
 	import { v4 } from 'uuid';
 	import { fly } from 'svelte/transition';
-	import { touchMove, touchStart } from '../../stores/touchGestures';
+	import { touchMove, touchStart, touchEnd } from '../../stores/touchGestures';
 	import screenSize from '../../stores/screenSize';
 	import Textarea from '../common/Textarea.svelte';
 	import L5sDeco from '../deco/L5sDeco.svelte';
@@ -77,6 +77,11 @@
 	}
 
 	let tasksListScreenTopArray = [];
+	let isReorderingItem = false;
+	let tasksListDOMElement;
+	touchEnd.subscribe((te) => {
+		isReorderingItem = false;
+	});
 
 	currentDay.subscribe((cd) => {
 		const tasks = cd.tasks;
@@ -85,7 +90,9 @@
 			for (let ix = 0; ix < tasks.length; ix++) {
 				const taskID = tasks[ix].id;
 				const taskDOMElementTop = document.getElementById(taskID)?.getBoundingClientRect().top;
-				const taskDOMElementBottom = document.getElementById(taskID)?.getBoundingClientRect().bottom;
+				const taskDOMElementBottom = document
+					.getElementById(taskID)
+					?.getBoundingClientRect().bottom;
 				tasksListScreenTopArray.push({ taskID, taskDOMElementTop, taskDOMElementBottom });
 			}
 		}, 20);
@@ -135,19 +142,38 @@
 
 	touchMove.subscribe((tm) => {
 		if (showLAtrributesEditor === false) {
-			const selectedTaskIndex = $currentDay.tasks.findIndex(
-				(elm) => elm.id === swipeStartedTaskID.id
-			);
+			if (isReorderingItem === true) {
+				if (tasksListDOMElement !== undefined) {
+					const tasksListDOMElementTop = tasksListDOMElement.getBoundingClientRect().top;
+					const tasksListDOMElementBottom = tasksListDOMElement.getBoundingClientRect().bottom;
+					const tasksListDOMElementHeight = tasksListDOMElement.getBoundingClientRect().height;
+					const tasksListScrollTopOffset = tasksListDOMElementHeight * 0.05;
+					const listScrollThreshold = tm[0].clientY + 0.007 * $screenSize.height;
+					if (listScrollThreshold < tasksListDOMElementTop && tasksListDOMElement.scrollTop > 0) {
+						tasksListDOMElement.scrollTo(
+							0,
+							tasksListDOMElement.scrollTop - tasksListScrollTopOffset
+						);
+					}
 
-			if (tasksListScreenTopArray[selectedTaskIndex - 1]?.taskDOMElementBottom > tm[0].clientY) {
-				swapTasksByIndex(selectedTaskIndex, selectedTaskIndex - 1);
+					if (listScrollThreshold > tasksListDOMElementBottom) {
+						tasksListDOMElement.scrollTo(
+							0,
+							tasksListDOMElement.scrollTop + tasksListScrollTopOffset
+						);
+					}
+				}
+				const selectedTaskIndex = $currentDay.tasks.findIndex(
+					(elm) => elm.id === swipeStartedTaskID.id
+				);
+
+				if (tasksListScreenTopArray[selectedTaskIndex - 1]?.taskDOMElementBottom > tm[0].clientY) {
+					swapTasksByIndex(selectedTaskIndex, selectedTaskIndex - 1);
+				}
+				if (tasksListScreenTopArray[selectedTaskIndex + 1]?.taskDOMElementTop < tm[0].clientY) {
+					swapTasksByIndex(selectedTaskIndex, selectedTaskIndex + 1);
+				}
 			}
-			if (tasksListScreenTopArray[selectedTaskIndex + 1]?.taskDOMElementTop < tm[0].clientY) {
-				swapTasksByIndex(selectedTaskIndex, selectedTaskIndex + 1);
-			}
-
-			// console.log(tasksListScreenTopArray[selectedTaskIndex - 1]?.taskDOMElementTop, tm[0].clientY);
-
 			let delta = swipeStartedTaskID.clientX - tm[0].clientX;
 			if (delta > 0.2 * $screenSize.width) {
 				selectedTaskID = swipeStartedTaskID.id;
@@ -343,7 +369,14 @@
 		figmaImport={{ mobile: { top: 120, left: 5, width: 350, height: 337 } }}
 		transitions={getTransition(3)}
 	>
-		<List width="100%" height="100%">
+		<List
+			on:thisDOM={(e) => {
+				tasksListDOMElement = e.detail;
+			}}
+			width="100%"
+			height="100%"
+			style="overflow: {isReorderingItem ? 'hidden' : 'scroll'};"
+		>
 			{#if $currentDay.tasks.length === 0}
 				<Button onClick={addTask} label="Add task" top="20%" width="80%" height="15%" />
 			{/if}
@@ -359,7 +392,7 @@
 				>
 					<Box
 						onSelected={() => {
-							swapTasksByIndex(ix, ix - 1);
+							isReorderingItem = true;
 						}}
 						width="100%"
 						height="100%"
