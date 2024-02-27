@@ -48,6 +48,7 @@
 	function addTask() {
 		currentDay.update((cd) => {
 			cd.tasks.push({
+				flagHistory: [{ newStatusID: 'STID-1', tx: Date.now() }],
 				id: `TID-${v4()}`,
 				name: `New Task [${v4().split('-')[1]}]`,
 				statusID: 'STID-1'
@@ -118,6 +119,8 @@
 			} catch (e) {}
 		}
 	});
+
+	$: console.log($currentDay.tasks)
 
 	function swapTasksByIndex(initialIndex, finalIndex) {
 		if (
@@ -599,7 +602,13 @@
 				const selectedTaskElm = cd.tasks.find((elm) => elm.id === selectedTaskID);
 				const selectedTaskIndex = cd.tasks.indexOf(selectedTaskElm);
 				if (selectedTaskIndex !== -1) {
-					cd.tasks[selectedTaskIndex]['statusID'] = e.detail;
+					const newStatusID = e.detail;
+					const flagHistory = cd.tasks[selectedTaskIndex]['flagHistory'];
+					cd.tasks[selectedTaskIndex]['flagHistory'] = [
+						...flagHistory,
+						{ newStatusID, tx: Date.now() }
+					];
+					cd.tasks[selectedTaskIndex]['statusID'] = newStatusID;
 				}
 				return cd;
 			});
