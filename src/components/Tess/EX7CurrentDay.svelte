@@ -408,7 +408,7 @@
 								lastEditedTaskName['taskID'] = task.id;
 								lastEditedTaskName['ix'] = ix;
 							}}
-							id={task.id}
+							id="TEXTAREA-{task.id}"
 							className="task {task.id}"
 							color={getStatusObjFromID(task.statusID)?.color}
 							backgroundColor="{getStatusObjFromID(task.statusID)?.color}00"
@@ -562,7 +562,9 @@
 				>
 					<Button
 						onClick={() => {
-							const taskActiveTextarea = document.getElementById(lastEditedTaskName.taskID);
+							const taskActiveTextarea = document.getElementById(
+								`TEXTAREA-${lastEditedTaskName.taskID}`
+							);
 							if (taskActiveTextarea !== undefined) {
 								taskActiveTextarea.value = taskNameSuggestion;
 								$currentDay.tasks[lastEditedTaskName.ix]['name'] = taskNameSuggestion;
