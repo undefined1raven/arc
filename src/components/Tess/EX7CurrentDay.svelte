@@ -120,7 +120,7 @@
 		}
 	});
 
-	$: console.log($currentDay.tasks)
+	$: console.log($currentDay.tasks);
 
 	function swapTasksByIndex(initialIndex, finalIndex) {
 		if (
@@ -603,11 +603,13 @@
 				const selectedTaskIndex = cd.tasks.indexOf(selectedTaskElm);
 				if (selectedTaskIndex !== -1) {
 					const newStatusID = e.detail;
-					const flagHistory = cd.tasks[selectedTaskIndex]['flagHistory'];
-					cd.tasks[selectedTaskIndex]['flagHistory'] = [
-						...flagHistory,
-						{ newStatusID, tx: Date.now() }
-					];
+					if (cd.tasks[selectedTaskIndex]['flagHistory'] !== undefined) {
+						const flagHistory = cd.tasks[selectedTaskIndex]['flagHistory'];
+						cd.tasks[selectedTaskIndex]['flagHistory'] = [
+							...flagHistory,
+							{ newStatusID, tx: Date.now() }
+						];
+					}
 					cd.tasks[selectedTaskIndex]['statusID'] = newStatusID;
 				}
 				return cd;

@@ -41,6 +41,7 @@
 	"dependencies": {
 		"@carbon/charts-svelte": "^1.11.21",
 		"@carbon/styles": "^1.36.0",
+		"@simplewebauthn/browser": "^9.0.1",
 		"@vercel/speed-insights": "^1.0.2",
 		"bcryptjs": "^2.4.3",
 		"mongodb": "^5.8.1",

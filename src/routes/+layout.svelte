@@ -156,7 +156,7 @@
 			<KeysIndicator />
 			<Label
 				verticalFont={$globalStyle.smallMobileFont}
-				text="WNX-532"
+				text="WNX-778"
 				height="100%"
 				left="0%"
 				color={$globalStyle.inactiveColor}

@@ -18,7 +18,7 @@
 	import isMobile from '../../fn/isMobile';
 
 	onMount(() => {
-		activeTessApp.set('ex7');
+		// activeTessApp.set('ex7');
 	});
 </script>
 

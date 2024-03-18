@@ -30,6 +30,8 @@
 	import DeleteAccountDeco from '../deco/DeleteAccountDeco.svelte';
 	import { getAccountKeyPayload } from '../../fn/getAccountKeyPayload';
 	import BackupManager from './BackupManager.svelte';
+	import { passkeyAuth, passkeySetup } from '../Login/passkeySetup';
+	import PasskeyDeco from '../deco/PasskeyDeco.svelte';
 
 	let lockdownEnabled = false;
 	let isBackupManagerVisible = false;
@@ -82,7 +84,10 @@
 	>
 	<Button
 		onClick={() => {
-			lockdownEnabled = !lockdownEnabled;
+			passkeySetup();
+		}}
+		onSelect={() => {
+			passkeyAuth();
 		}}
 		borderColor={lockdownEnabled ? $globalStyle.successColor : $globalStyle.activeColor}
 		backgroundColor={lockdownEnabled ? $globalStyle.successColor : $globalStyle.activeColor}
@@ -95,14 +100,9 @@
 		><Label
 			color={lockdownEnabled ? $globalStyle.successColor : $globalStyle.activeMono}
 			top="38%"
-			text="Lockdown Mode | {lockdownEnabled ? 'On' : 'Off'}"
+			text="Register Passkey"
 			left="2%"
-		/><AllLogoutDeco
-			color={lockdownEnabled ? $globalStyle.successColor : $globalStyle.activeColor}
-			width="20%"
-			height="70%"
-			left="80%"
-		/></Button
+		/><PasskeyDeco color={$globalStyle.activeColor} width="20%" height="70%" left="80%" /></Button
 	>
 	<Label
 		transitions={getTransition(5)}

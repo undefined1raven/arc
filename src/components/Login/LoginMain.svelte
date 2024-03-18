@@ -17,19 +17,22 @@
 	import List from '../common/List.svelte';
 	import { updateLabel } from '../../stores/updateLabel';
 	import DecoX from '../deco/DecoX.svelte';
-
+	import KeyDeco from '../deco/KeyDeco.svelte';
+	import PasskeyDeco from '../deco/PasskeyDeco.svelte';
+	import { passkeySetup } from './passkeySetup';
+	import { startRegistration } from '@simplewebauthn/browser';
 	let desktopLogArray = [{ label: 'Key Standby', color: $globalStyle.activeColor }];
 	let showDecoGrid = false;
 	let fileInput;
 	let authStatus = {
-		label: 'Enter Key',
+		label: 'Awaiting Key',
 		bkgColor: `${$globalStyle.activeColor}20`,
 		color: $globalStyle.activeMono
 	};
 
 	function setAuthStatusToDefault() {
 		authStatus = {
-			label: 'Enter Key',
+			label: 'Standing By for Key',
 			bkgColor: `${$globalStyle.activeColor}20`,
 			color: $globalStyle.activeMono
 		};
@@ -188,34 +191,65 @@
 			/>
 		</Box>
 		<Box
-			figmaImport={{ mobile: { top: 139, left: '50%', width: 250, height: 30 } }}
-			horizontalCenter={true}
+			figmaImport={{ mobile: { top: 120, left: 55, width: 145, height: 14 } }}
 			transitions={{ in: { func: fly, options: { duration: 350, y: '5%' } } }}
 			><Label
 				width="100%"
 				height="100%"
 				color={authStatus.color}
-				borderRadius="5px"
+				borderRadius="3px"
+				verticalFont={$globalStyle.smallMobileFont}
 				backgroundColor={authStatus.bkgColor}
 				text={authStatus.label}
 			/></Box
 		>
 		<Box
-			figmaImport={{ mobile: { top: 195, left: '50%', width: 250, height: 250 } }}
-			backgroundColor="{$globalStyle.activeColor}20"
+			figmaImport={{ mobile: { top: 139, left: '50%', width: 250, height: 290 } }}
+			backgroundColor="{$globalStyle.activeColor}00"
 			horizontalCenter={true}
 			transitions={{ in: { func: fly, options: { duration: 350, y: '5%' } } }}
-			><Button
-				style="overflow: hidden;"
+		>
+			<Label transitions={getTransition(2)} text="Enter Private Key" top="35%" />
+			<Box transitions={getTransition(3)} top="45%" width="40%" height="20%"
+				><KeyDeco color={$globalStyle.activeMono} /></Box
+			>
+			<Label
+				transitions={getTransition(4)}
+				text="File ending in .key.txt"
+				verticalFont={$globalStyle.smallMobileFont}
+				top="75%"
+			/>
+			<Button
 				width="100%"
 				height="100%"
-				hoverOpacityMin={0}
+				hoverOpacityMin={10}
 				hoverOpacityMax={10}
-				borderRadius="5px"
+				borderRadius={$globalStyle.borderRadius}
 			>
 				<input bind:this={fileInput} class="keyInput" type="file" /></Button
 			>
 		</Box>
+		<!-- <Box
+			figmaImport={{ mobile: { top: 305, left: '50%', width: 250, height: 139 } }}
+			transitions={{ in: { func: fly, options: { delay: 50, duration: 350, y: '5%' } } }}
+			horizontalCenter={true}
+		>
+			<Label text="Use a Passkey" top="35%" />
+			<Box width="45%" top="55%" height="20%"
+				><PasskeyDeco width="100%" height="100%" color={$globalStyle.activeMono} /></Box
+			>
+			<Button
+				onClick={() => {
+					console.log('here')
+					passkeySetup();
+				}}
+				width="100%"
+				height="100%"
+				hoverOpacityMin={10}
+				hoverOpacityMax={10}
+				borderRadius={$globalStyle.borderRadius}
+			/>
+		</Box> -->
 		<Label
 			figmaImport={{ mobile: { top: 469, left: '50%', width: 250, height: 44 } }}
 			horizontalCenter={true}
