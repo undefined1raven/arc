@@ -24,7 +24,10 @@
 	import Textarea from '../common/Textarea.svelte';
 	import L5sDeco from '../deco/L5sDeco.svelte';
 	import LAttributesEditor from './LAttributesEditor.svelte';
-
+	import TessDeco from '../deco/TessDeco.svelte';
+	import MoodLoggerDeco from '../deco/MoodLoggerDeco.svelte';
+	import { activeTessApp, showDayHeader } from './activeTessApp';
+	import MoodLoggerMain from './MoodLogger/MoodLoggerMain.svelte';
 	let currentDate = new Date();
 	let displayDate =
 		currentDate.toLocaleString('default', {
@@ -36,7 +39,7 @@
 
 	let showEXFPicker = false;
 	let showStatusPicker = false;
-	let showLAtrributesEditor = false;
+	let showMoodLogger = false;
 	let allowPickingInStatusPicker = false;
 
 	let endDayConfirmationStage = false;
@@ -106,10 +109,16 @@
 		}, 10);
 	});
 
+	$: if (showMoodLogger === true) {
+		showDayHeader.set(false);
+	} else {
+		showDayHeader.set(true);
+	}
+
 	let selectedTaskID = 'none';
 	let swipeStartedTaskID = { id: 'none', clientX: 0 };
 	touchStart.subscribe((s) => {
-		if (showLAtrributesEditor === false) {
+		if (showMoodLogger === false) {
 			try {
 				const classes = s[0]?.target?.className?.split(' ');
 				const taskClassIndex = classes.indexOf('task');
@@ -119,8 +128,6 @@
 			} catch (e) {}
 		}
 	});
-
-	$: console.log($currentDay.tasks);
 
 	function swapTasksByIndex(initialIndex, finalIndex) {
 		if (
@@ -144,7 +151,7 @@
 	}
 
 	touchMove.subscribe((tm) => {
-		if (showLAtrributesEditor === false) {
+		if (showMoodLogger === false) {
 			if (isReorderingItem === true) {
 				if (tasksListDOMElement !== undefined) {
 					const tasksListDOMElementTop = tasksListDOMElement.getBoundingClientRect().top;
@@ -270,78 +277,82 @@
 	left="50%"
 />
 
-<Label
-	text={displayDate}
-	transitions={getTransition(1)}
-	backgroundColor="{$globalStyle.activeColor}20"
-	borderRadius={$globalStyle.borderRadius}
-	style="text-align: start; justify-content: start; padding-left: 2%;"
-	figmaImport={{ mobile: { top: 30, left: 5, width: 183, height: 36 } }}
-/>
-<Button
-	onClick={() => {
-		if (endDayConfirmationStage === true) {
-			logs.update((lg) => {
-				lg.push({
-					exf: getEXF($currentDay).score,
-					exfArray: $currentDay.exfArray,
-					tasks: $currentDay.tasks,
-					tx: $currentDay.tx,
-					L5s: $currentDay.L5s
+{#if $showDayHeader === true}
+	<Label
+		text={displayDate}
+		transitions={{
+			in: { func: fly, options: { y: '-10%', duration: 150 } },
+			out: { func: fly, options: { y: '10%', duration: 150 } }
+		}}
+		backgroundColor="{$globalStyle.activeColor}20"
+		borderRadius={$globalStyle.borderRadius}
+		style="text-align: start; justify-content: start; padding-left: 2%;"
+		figmaImport={{ mobile: { top: 30, left: 5, width: 183, height: 36 } }}
+	/>
+	<Button
+		onClick={() => {
+			if (endDayConfirmationStage === true) {
+				logs.update((lg) => {
+					lg.push({
+						exf: getEXF($currentDay).score,
+						exfArray: $currentDay.exfArray,
+						tasks: $currentDay.tasks,
+						tx: $currentDay.tx,
+						moodLogs: $currentDay.moodLogs
+					});
+					return lg;
 				});
-				return lg;
-			});
-			currentDay.set({
-				tx: 0,
-				active: false,
-				exfArray: [],
-				tasks: [],
-				L5s: {
-					L0: { x: 0, y: 0, color: '#959595' },
-					L1: { x: 0, y: 0, color: '#608DFF' },
-					L2: { x: 0, y: 0, color: '#1400FF' },
-					L3: { x: 0, y: 0, color: '#712EFF' },
-					L4: { x: 0, y: 0, color: '#BD00FF' },
-					none: { x: 0, y: 0 }
-				}
-			});
-			window.location.hash = 'home';
-		} else {
-			endDayConfirmationStage = true;
-			setTimeout(() => {
-				endDayConfirmationStage = false;
-			}, 3000);
-		}
-	}}
-	transitions={getTransition(1)}
-	label={endDayConfirmationStage ? 'Tap to confirm' : 'End Day'}
-	hoverOpacityMin={0}
-	hoverOpacityMax={20}
-	figmaImport={{ mobile: { top: 30, left: 195, width: 160, height: 36 } }}
-/>
-
-<Label
-	text="Tasks"
-	transitions={getTransition(2)}
-	backgroundColor="{$globalStyle.activeColor}20"
-	borderRadius={$globalStyle.borderRadius}
-	figmaImport={{ mobile: { top: 75, left: 5, width: 83, height: 36 } }}
-/>
-<Button
-	onClick={() => {
-		showLAtrributesEditor = !showLAtrributesEditor;
-	}}
-	transitions={getTransition(2)}
-	label=""
-	hoverOpacityMin={showLAtrributesEditor ? 40 : 0}
-	hoverOpacityMax={showLAtrributesEditor ? 40 : 20}
-	figmaImport={{ mobile: { top: 75, left: 95, width: 56, height: 36 } }}
-	><L5sDeco width="50%" height="70%" /></Button
->
-{#if showLAtrributesEditor === true}
-	<LAttributesEditor />
+				currentDay.set({
+					tx: 0,
+					active: false,
+					exfArray: [],
+					tasks: [],
+					moodLogs: []
+				});
+				window.location.hash = 'home';
+			} else {
+				endDayConfirmationStage = true;
+				setTimeout(() => {
+					endDayConfirmationStage = false;
+				}, 3000);
+			}
+		}}
+		transitions={{
+			in: { func: fly, options: { y: '-10%', duration: 150 } },
+			out: { func: fly, options: { y: '10%', duration: 150 } }
+		}}
+		label={endDayConfirmationStage ? 'Tap to confirm' : 'End Day'}
+		hoverOpacityMin={0}
+		hoverOpacityMax={20}
+		figmaImport={{ mobile: { top: 30, left: 195, width: 160, height: 36 } }}
+	/>
+	<Label
+		text="Tasks"
+		transitions={getTransition(2)}
+		backgroundColor="{$globalStyle.activeColor}20"
+		borderRadius={$globalStyle.borderRadius}
+		figmaImport={{ mobile: { top: 75, left: 5, width: 83, height: 36 } }}
+	/>
+	<Button
+		onClick={() => {
+			showMoodLogger = !showMoodLogger;
+		}}
+		transitions={getTransition(2)}
+		label=""
+		hoverOpacityMin={showMoodLogger ? 40 : 0}
+		hoverOpacityMax={showMoodLogger ? 40 : 20}
+		figmaImport={{ mobile: { top: 75, left: 95, width: 56, height: 36 } }}
+		><MoodLoggerDeco width="50%" height="70%" /></Button
+	>
 {/if}
-{#if showLAtrributesEditor === false}
+{#if showMoodLogger === true}
+	<MoodLoggerMain
+		on:back={(e) => {
+			showMoodLogger = false;
+		}}
+	/>
+{/if}
+{#if showMoodLogger === false}
 	<Button
 		onClick={() => {
 			showStatusPicker = true;

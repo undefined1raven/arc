@@ -5,13 +5,7 @@
 	import HorizontalLine from '../../common/HorizontalLine.svelte';
 	import globalStyle from '../../../stores/globalStyles';
 	import { onDestroy, onMount } from 'svelte';
-	import {
-		currentDay,
-		exfArray,
-		logs,
-		selectedDayObj,
-		statusArray
-	} from '../TessVault';
+	import { currentDay, exfArray, logs, moodsArray, selectedDayObj, statusArray } from '../TessVault';
 	import { tasks } from '../../../stores/dayViewSelectedDay';
 	import Input from '../../common/Input.svelte';
 	import { fade, fly } from 'svelte/transition';
@@ -53,7 +47,6 @@
 			];
 			return x;
 		});
-		console.log($currentDay);
 	});
 	function getMoodConfig(id) {
 		return $moodsArray.find((elm) => elm.id === id);

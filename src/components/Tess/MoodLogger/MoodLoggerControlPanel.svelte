@@ -9,6 +9,7 @@
 		currentDay,
 		exfArray,
 		logs,
+        moodsArray
 		selectedDayObj,
 		statusArray
 	} from '../TessVault';

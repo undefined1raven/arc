@@ -62,7 +62,7 @@ async function processEncryptedTess(logs, currentDay, exfArray, statusArray, pri
             return { status: false, error: 'unk' }
         }
     }).catch(e => {
-        console.log(moodArray)
+        console.log(e)
         return { status: false, error: e }
     })
 }

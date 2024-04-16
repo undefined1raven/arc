@@ -26,7 +26,6 @@
 		}
 	});
 
-	$: console.log($moodsArray)
 </script>
 
 <svelte:component this={hashToComponent[$windowHash]} />
