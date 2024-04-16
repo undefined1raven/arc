@@ -66,7 +66,11 @@
 		<Button
 			transitions={getTransition(1)}
 			onClick={() => {
-				localStorage.setItem('activeMood', JSON.stringify({ id: 'MD-1', tx: Date.now() }));
+				localStorage.setItem(
+					'activeMood',
+					JSON.stringify({ id: 'MD-1', tx: Date.now(), eflag: false })
+				);
+				currentMood.set({ id: 'MD-1', tx: Date.now(), eflag: false });
 			}}
 			horizontalCenter={true}
 			figmaImportConfig={panelContainerConfig}
