@@ -5,7 +5,14 @@
 	import HorizontalLine from '../../common/HorizontalLine.svelte';
 	import globalStyle from '../../../stores/globalStyles';
 	import { onDestroy, onMount } from 'svelte';
-	import { currentDay, exfArray, logs, moodsArray, selectedDayObj, statusArray } from '../TessVault';
+	import {
+		currentDay,
+		exfArray,
+		logs,
+		moodsArray,
+		selectedDayObj,
+		statusArray
+	} from '../TessVault';
 	import { tasks } from '../../../stores/dayViewSelectedDay';
 	import Input from '../../common/Input.svelte';
 	import { fade, fly } from 'svelte/transition';
@@ -27,6 +34,8 @@
 	import ListItem from '../../common/ListItem.svelte';
 	import { getTimeFromUnix } from '../../../fn/getTimeFromUnix';
 	import EflagDeco from '../../deco/EflagDeco.svelte';
+	import { currentMood } from './currentMood';
+	import MoodLoggerControlPanel from './MoodLoggerControlPanel.svelte';
 	const dispatch = createEventDispatcher();
 	function onBack() {
 		dispatch('back');
@@ -34,6 +43,15 @@
 	let showEditMode = false;
 	const dayHistoryListItemConfig = { containerHeight: 367, containerWidth: 350 };
 	const dayHistoryListItemContentConfig = { containerHeight: 70, containerWidth: 350 };
+
+	function updateCurrentMoodStore(localStorageVal) {
+		if (localStorageVal !== null) {
+			currentMood.set(JSON.parse(localStorageVal));
+		}
+	}
+
+	$: updateCurrentMoodStore(localStorage.getItem('activeMood'));
+
 	onMount(() => {
 		currentDay.update((x) => {
 			x['moodLogs'] = [
@@ -154,3 +172,4 @@
 		</ListItem>
 	{/each}
 </List>
+<MoodLoggerControlPanel />

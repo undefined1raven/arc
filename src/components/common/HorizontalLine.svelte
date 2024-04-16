@@ -2,9 +2,10 @@
 	import getFigmaImportConfig from '../../config/FigmaImportConfig';
 	import FigmaImporter from '../../fn/figmaImporter';
 	import readTransitions from '../../fn/readTransitions';
+	import globalStyle from '../../stores/globalStyles';
 
 	let width = '100%';
-	let color = '#FFF';
+	let color = $globalStyle.activeColor;
 	let top = 'auto';
 	let left = 'auto';
 	let style = '';
