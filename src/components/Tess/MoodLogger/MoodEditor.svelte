@@ -37,6 +37,8 @@
 	import { currentMood } from './currentMood';
 	import MoodLoggerControlPanel from './MoodLoggerControlPanel.svelte';
 	import AddDeco from '../../deco/AddDeco.svelte';
+	import { selectedMoodToEdit } from './selectedMoodToEdit';
+	import ColorInput from '../../common/ColorInput.svelte';
 	const dispatch = createEventDispatcher();
 	function onBack() {
 		dispatch('back');
@@ -151,5 +153,38 @@
 		verticalFont={$globalStyle.mediumMobileFont}
 		figmaImport={{ mobile: { top: 30, left: 260, width: 95, height: 36 } }}
 		transitions={getTransition(1)}
+	/>
+
+	<Label
+		transitions={getTransition(2)}
+		figmaImport={{ mobile: { top: 78, left: 5, width: 95, height: 36 } }}
+		text="Name"
+		borderRadius={$globalStyle.borderRadius}
+		align="left"
+		alignPadding="2%"
+		verticalFont={$globalStyle.mediumMobileFont}
+		backgroundColor="{$globalStyle.activeColor}20"
+		style="border: none; border-left: solid 1px {$globalStyle.activeColor}; border-top-left-radius: 0; border-bottom-left-radius: 0;"
+	/>
+	<Input
+		transitions={getTransition(2)}
+		paddingLeft="2%"
+		figmaImport={{ mobile: { top: 78, left: 107, width: 248, height: 36 } }}
+		defaultValue={$selectedMoodToEdit.title}
+	/>
+	<Label
+		transitions={getTransition(3)}
+		figmaImport={{ mobile: { top: 126, left: 5, width: 95, height: 36 } }}
+		text="Color"
+		borderRadius={$globalStyle.borderRadius}
+		align="left"
+		alignPadding="2%"
+		verticalFont={$globalStyle.mediumMobileFont}
+		backgroundColor="{$globalStyle.activeColor}20"
+		style="border: none; border-left: solid 1px {$globalStyle.activeColor}; border-top-left-radius: 0; border-bottom-left-radius: 0;"
+	/>
+	<ColorInput
+		style="border-radius: {$globalStyle.borderRadius};"
+		figmaImport={{ mobile: { top: 126, left: 107, width: 248, height: 36 } }}
 	/>
 {/if}
