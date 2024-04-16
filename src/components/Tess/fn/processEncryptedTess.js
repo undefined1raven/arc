@@ -1,13 +1,24 @@
 import symmetricDecrypt from "../../../fn/crypto/symmetricDecrypt";
+import { validateInput } from "../../../fn/validateInput";
+import { moodsArray } from "../TessVault";
+let currentMoodsArray = [];
+moodsArray.subscribe((ma) => {
+    currentMoodsArray = ma;
+})
 
-async function processEncryptedTess(logs, currentDay, exfArray, statusArray, priorityArray, projects, key) {
+async function processEncryptedTess(logs, currentDay, exfArray, statusArray, priorityArray, projects, moodArray, key) {
     let decryptionPromiseArray = [];
+
+    const hasMoodArray = moodArray !== undefined;
 
     decryptionPromiseArray.push(symmetricDecrypt(currentDay.cipher, key, currentDay.iv));
     decryptionPromiseArray.push(symmetricDecrypt(exfArray.cipher, key, exfArray.iv));
     decryptionPromiseArray.push(symmetricDecrypt(statusArray.cipher, key, statusArray.iv));
     decryptionPromiseArray.push(symmetricDecrypt(priorityArray.cipher, key, priorityArray.iv));
     decryptionPromiseArray.push(symmetricDecrypt(projects.cipher, key, projects.iv));
+    if (hasMoodArray) {
+        decryptionPromiseArray.push(symmetricDecrypt(moodArray.cipher, key, moodArray.iv));
+    }
 
     return await Promise.allSettled(decryptionPromiseArray).then(arr => {
         if (arr.find(elm => elm.status === 'rejected') === undefined) {
@@ -43,6 +54,7 @@ async function processEncryptedTess(logs, currentDay, exfArray, statusArray, pri
                     statusArray: JSON.parse(arr[2].value),
                     priorityArray: JSON.parse(arr[3].value),
                     projects: JSON.parse(arr[4].value),
+                    moodArray: hasMoodArray ? JSON.parse(arr[5].value) : currentMoodsArray
                 }
             }
         } else {
@@ -50,7 +62,7 @@ async function processEncryptedTess(logs, currentDay, exfArray, statusArray, pri
             return { status: false, error: 'unk' }
         }
     }).catch(e => {
-        console.log(e)
+        console.log(moodArray)
         return { status: false, error: e }
     })
 }

@@ -29,6 +29,7 @@
 		isTessImported,
 		logs,
 		priorityArray,
+		moodsArray,
 		projects,
 		statusArray as tessStatusArray
 	} from '../components/Tess/TessVault';
@@ -144,12 +145,17 @@
 					$tessStatusArray,
 					$priorityArray,
 					$projects,
+					$moodsArray,
 					$tessPIN.pin,
 					true
 				);
 			}
 		}
 	}
+
+	moodsArray.subscribe(async (ma) => {
+		await onDataUpdate('tess');
+	});
 
 	priorityArray.subscribe(async (pa) => {
 		await onDataUpdate('tess');
@@ -222,6 +228,7 @@
 					$tessStatusArray,
 					$priorityArray,
 					$projects,
+					$moodsArray,
 					$tessPIN.pin,
 					true
 				);

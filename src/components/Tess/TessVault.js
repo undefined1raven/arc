@@ -14,8 +14,9 @@ const currentDay = writable({
         L3: { x: 0, y: 0, color: '#712EFF' },
         L4: { x: 0, y: 0, color: '#BD00FF' },
         none: { x: 0, y: 0 }
-    }
-}); 
+    },
+    moodLogs: []
+});
 
 const exfArray = writable([
     { EXFID: 'EXFID-1', event: 'Oversleeping', score: -300, show: true },
@@ -38,8 +39,18 @@ const priorityArray = writable([
     { name: 'L1', color: '#2400ff', show: true, id: 'PIX-3' },
     { name: 'L0', color: '#2400ff', show: true, id: 'PIX-4' }]);
 
+
+const moodsArray = writable([
+    { title: 'Stable High', color: '#00FF75', score: 70, id: 'MD-0' },
+    { title: 'High Burst', color: '#0094FF', score: 10, id: 'MD-2' },
+    { title: 'Low', color: '#CD5057', score: -50, id: 'MD-1' },
+    { title: 'Bottom Low', color: '#7D0F15', score: -80, id: 'MD-4' },
+    { title: 'ECOR', color: '#2515DE', score: -100, id: 'MD-3' },
+    { title: 'Neutral', color: '#759A86', score: 0, id: 'MD-5' },
+]);
+
 const isTessImported = writable(false);
 
 const selectedDayObj = writable({ tasks: [], exfArray: [], ini: false, ix: -1 });
 
-export { logs, statusArray, exfArray, currentDay, isTessImported, selectedDayObj, priorityArray, projects }
+export { logs, statusArray, exfArray, currentDay, isTessImported, selectedDayObj, priorityArray, projects, moodsArray }

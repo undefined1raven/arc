@@ -23,6 +23,7 @@
 		exfArray,
 		isTessImported,
 		logs,
+		moodsArray,
 		priorityArray,
 		projects,
 		statusArray
@@ -95,6 +96,7 @@
 									currentCache.tess.statusArray,
 									currentCache.tess.priorityArray,
 									currentCache.tess.projects,
+									currentCache.tess.moodArray,
 									key
 								);
 								if (decryptedObj.status === true && decryptedObj.results !== undefined) {
@@ -104,6 +106,7 @@
 									statusArray.set(decryptedObj.results.statusArray);
 									priorityArray.set(decryptedObj.results.priorityArray);
 									projects.set(decryptedObj.results.projects);
+									moodsArray.set(decryptedObj.results.moodArray);
 									isTessImported.set(true);
 								}
 							} else {

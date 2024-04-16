@@ -13,7 +13,7 @@
 	import Ex7logs from './ex7logs.svelte';
 	import Ex7CurrentDay from './EX7CurrentDay.svelte';
 	import ExfEditor from './EXFEditor.svelte';
-	import { currentDay, exfArray, isTessImported, logs, statusArray } from './TessVault';
+	import { currentDay, exfArray, isTessImported, logs, moodsArray, statusArray } from './TessVault';
 	import { str2ab, unwrapKey } from '../../fn/crypto/keyOps';
 	import { validateInput } from '../../fn/validateInput';
 	import { processEncryptedTess } from './fn/processEncryptedTess';
@@ -53,6 +53,7 @@
 								currentCache.tess.statusArray,
 								currentCache.tess.priorityArray,
 								currentCache.tess.projects,
+								currentCache.tess.moodArray,
 								key
 							);
 							if (decryptedObj.status === true && decryptedObj.results !== undefined) {
@@ -60,6 +61,7 @@
 								currentDay.set(decryptedObj.results.currentDay);
 								exfArray.set(decryptedObj.results.exfArray);
 								statusArray.set(decryptedObj.results.statusArray);
+								moodsArray.set(decryptedObj.results.moodArray);
 								isTessImported.set(true);
 							}
 						} else {

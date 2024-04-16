@@ -20,7 +20,7 @@ function handleEncryptionError(e) {
  * @param boolean updateCache
  * @returns Object {status: true|false, uplinkDoc: uplinkDoc(if successful) else error: e}
  */
-async function getTessUplinkDoc(logs, currentDay, exfArray, statusArray, priorityArray, projects, vaultPIN, updateCache) {
+async function getTessUplinkDoc(logs, currentDay, exfArray, statusArray, priorityArray, projects, moodArray, vaultPIN, updateCache) {
     let tess_simkey = localStorage.getItem('tess_simkey');
 
     const chunkedLogs = chunkArray(15, logs);
@@ -53,6 +53,7 @@ async function getTessUplinkDoc(logs, currentDay, exfArray, statusArray, priorit
                 exportPromiseArray.push(symmetricEncrypt(JSON.stringify(statusArray), key));
                 exportPromiseArray.push(symmetricEncrypt(JSON.stringify(priorityArray), key));
                 exportPromiseArray.push(symmetricEncrypt(JSON.stringify(projects), key));
+                exportPromiseArray.push(symmetricEncrypt(JSON.stringify(moodArray), key));
                 return Promise.allSettled(exportPromiseArray).then(arr => {
                     if (arr.find(elm => elm.status === 'rejected') === undefined) {
                         if (updateCache === true) {
@@ -66,6 +67,7 @@ async function getTessUplinkDoc(logs, currentDay, exfArray, statusArray, priorit
                                     statusArray: arr[2].value,
                                     priorityArray: arr[3].value,
                                     projects: arr[4].value,
+                                    moodArray: arr[5].value,
                                 }
                             };
                             if (currentCache === null) {
@@ -87,6 +89,7 @@ async function getTessUplinkDoc(logs, currentDay, exfArray, statusArray, priorit
                                     statusArray: arr[2].value,
                                     priorityArray: arr[3].value,
                                     projects: arr[4].value,
+                                    moodArray: arr[5].value,
                                 },
                                 tx: Date.now()
                             }

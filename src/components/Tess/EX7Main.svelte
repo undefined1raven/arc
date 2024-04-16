@@ -11,6 +11,7 @@
 	import Ex7Home from './EX7Home.svelte';
 	import Ex7CurrentDay from './EX7CurrentDay.svelte';
 	import Ex7logs from './ex7logs.svelte';
+	import { moodsArray } from './TessVault';
 
 	const hashToComponent = {
 		'#login': Login,
@@ -24,6 +25,8 @@
 			window.location.hash = 'home';
 		}
 	});
+
+	$: console.log($moodsArray)
 </script>
 
 <svelte:component this={hashToComponent[$windowHash]} />

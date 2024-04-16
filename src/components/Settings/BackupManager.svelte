@@ -14,7 +14,15 @@
 	import { processEncryptedTess } from '../Tess/fn/processEncryptedTess';
 	import { tessPIN } from '../../stores/tessPIN';
 	import { unwrapKey, str2ab, importSymmetricKey } from '../../fn/crypto/keyOps';
-	import { currentDay, exfArray, isTessImported, logs } from '../Tess/TessVault';
+	import {
+		currentDay as currentDayActual,
+		exfArray as exfArrayActual,
+		isTessImported,
+		logs as logsActual,
+		priorityArray as priorityArrayActual,
+		projects as projectsActual,
+		statusArray as statusArrayActual
+	} from '../Tess/TessVault';
 	import { statusArray } from '../../components/Tess/TessVault';
 	import { validateInput } from '../../fn/validateInput';
 	import { processEncryptedSID } from '../SID/fn/processEncryptedSID';
@@ -35,74 +43,66 @@
 						let backupObj = JSON.parse(reader.result);
 						if (backupObj.accountID !== undefined && backupObj.backup !== undefined) {
 							if (true) {
-								// try {
-								// 	if ($tessPIN.ini === false && $tessPIN.pin.length !== 6) {
-								// 		throw new Error('No Tess PIN');
-								// 	}
-								// 	const parsedBackup = JSON.parse(backupObj.backup);
-								// 	const tess_simkey = JSON.parse(localStorage.getItem('tess_simkey'));
-								// 	unwrapKey(
-								// 		str2ab(tess_simkey.key),
-								// 		$tessPIN.pin,
-								// 		str2ab(tess_simkey.salt),
-								// 		str2ab(tess_simkey.iv)
-								// 	)
-								// 		.then(async (key) => {
-								// 			if (parsedBackup.tess !== undefined) {
-								// 				const tessObj = parsedBackup.tess;
-								// 				processEncryptedTess(
-								// 					tessObj.logs,
-								// 					tessObj.currentDay,
-								// 					tessObj.exfArray,
-								// 					tessObj.statusArray,
-								// 					tessObj.priorityArray,
-								// 					tessObj.projects,
-								// 					key
-								// 				).then((decryptedTessObj) => {
-								// 					if (decryptedTessObj.status === true) {
-								// 						if (
-								// 							validateInput(
-								// 								['logs', 'currentDay', 'exfArray', 'statusArray'],
-								// 								decryptedTessObj.results
-								// 							) === true
-								// 						) {
-								// 							logs.set(decryptedTessObj.results.logs);
-								// 							currentDay.set(decryptedTessObj.results.currentDay);
-								// 							exfArray.set(decryptedTessObj.results.exfArray);
-								// 							statusArray.set(decryptedTessObj.results.statusArray);
-								// 							isTessImported.set(false);
-								// 						}
-								// 					}
-								// 				});
-								// 			}
-								// 			if (
-								// 				parsedBackup.SIDs !== undefined &&
-								// 				parsedBackup.statusArray !== undefined
-								// 			) {
-								// 				processEncryptedSID(
-								// 					parsedBackup.SIDs,
-								// 					parsedBackup.statusArray,
-								// 					key
-								// 				).then((decryptedSIDsObj) => {
-								// 					if (
-								// 						decryptedSIDsObj.status === true &&
-								// 						validateInput(['SIDs', 'statusArray'], decryptedSIDsObj.results)
-								// 					) {
-								// 						SIDs.set(decryptedSIDsObj.results.SIDs);
-								// 						statusArray.set(decryptedSIDsObj.results.statusArray);
-								// 						SIDsImported.set(false);
-								// 					}
-								// 				});
-								// 			}
-								// 		})
-								// 		.catch((e) => {
-								// 			console.log('Failed to unwrap tess simkey');
-								// 		});
-								// 	// console.log(parsedBackup);
-								// } catch (e) {
-								// 	console.log(e);
-								// 	throw new Error('Backup Parsing Error');
-								// }
+								try {
+									if ($tessPIN.ini === false && $tessPIN.pin.length !== 6) {
+										throw new Error('No Tess PIN');
+									}
+									const parsedBackup = JSON.parse(backupObj.backup);
+									const tess_simkey = JSON.parse(localStorage.getItem('tess_simkey'));
+									unwrapKey(
+										str2ab(tess_simkey.key),
+										$tessPIN.pin,
+										str2ab(tess_simkey.salt),
+										str2ab(tess_simkey.iv)
+									)
+										.then(async (key) => {
+											if (parsedBackup.tess !== undefined) {
+												const tessObj = parsedBackup.tess;
+												processEncryptedTess(
+													tessObj.logs,
+													tessObj.currentDay,
+													tessObj.exfArray,
+													tessObj.statusArray,
+													tessObj.priorityArray,
+													tessObj.projects,
+													tessObj.moodArray,
+													key
+												).then((decryptedTessObj) => {
+													if (decryptedTessObj.status === true) {
+														if (
+															validateInput(
+																['logs', 'currentDay', 'exfArray', 'statusArray'],
+																decryptedTessObj.results
+															) === true
+														) {
+															const {
+																currentDay,
+																exfArray,
+																logs,
+																priorityArray,
+																projects,
+																statusArray
+															} = decryptedTessObj.results;
+															logsActual.set(logs);
+															currentDayActual.set(currentDay);
+															exfArrayActual.set(exfArray);
+															priorityArrayActual.set(priorityArray);
+															projectsActual.set(projects);
+															statusArrayActual.set(statusArray);
+															console.log(statusArrayone);
+														}
+													}
+												});
+											}
+										})
+										.catch((e) => {
+											console.log('Failed to unwrap tess simkey');
+										});
+									// console.log(parsedBackup);
+								} catch (e) {
+									console.log(e);
+									throw new Error('Backup Parsing Error');
+								}
 							} else {
 								throw new Error('Account Mismatch Detected');
 							}
