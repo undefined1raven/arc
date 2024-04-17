@@ -48,25 +48,13 @@
 	function updateCurrentMoodStore(localStorageVal) {
 		if (localStorageVal !== null) {
 			currentMood.set(JSON.parse(localStorageVal));
+		} else {
+			currentMood.set(null);
 		}
 	}
 
 	$: updateCurrentMoodStore(localStorage.getItem('activeMood'));
 
-	onMount(() => {
-		currentDay.update((x) => {
-			x['moodLogs'] = [
-				{ id: 'MD-0', startUnix: Date.now(), endUnix: Date.now(), note: 'xsxs', eflag: true },
-				{ id: 'MD-2', startUnix: Date.now(), endUnix: Date.now(), note: null, eflag: true },
-				{ id: 'MD-2', startUnix: Date.now(), endUnix: Date.now(), note: null, eflag: true },
-				{ id: 'MD-2', startUnix: Date.now(), endUnix: Date.now(), note: null, eflag: true },
-				{ id: 'MD-4', startUnix: Date.now(), endUnix: Date.now(), note: null, eflag: false },
-				{ id: 'MD-4', startUnix: Date.now(), endUnix: Date.now(), note: null, eflag: true },
-				{ id: 'MD-2', startUnix: Date.now(), endUnix: Date.now(), note: null, eflag: true }
-			];
-			return x;
-		});
-	});
 	function getMoodConfig(id) {
 		return $moodsArray.find((elm) => elm.id === id);
 	}
@@ -77,6 +65,7 @@
 		const displayEndTime = getTimeFromUnix(endTimeUnix);
 		return `${displayStartTime} >>> ${displayEndTime}`;
 	}
+
 </script>
 
 {#if isEditingMoods === false}
@@ -116,6 +105,17 @@
 	>
 
 	<List figmaImport={{ mobile: { top: 120, left: 5, width: 350, height: 360 } }}>
+		{#if $currentDay.moodLogs.length === 0}
+			<Label
+				transitions={getTransition(1)}
+				verticalFont={$globalStyle.mediumMobileFont}
+				text="No history to display"
+				backgroundColor="{$globalStyle.activeColor}20"
+				width="70%"
+				height="8%"
+			/>
+		{/if}
+
 		{#each $currentDay.moodLogs as moodLog, ix}
 			<ListItem
 				marginBottom="4%"

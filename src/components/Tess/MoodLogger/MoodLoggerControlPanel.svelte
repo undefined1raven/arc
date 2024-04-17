@@ -35,10 +35,22 @@
 	import { getTimeFromUnix } from '../../../fn/getTimeFromUnix';
 	import EflagDeco from '../../deco/EflagDeco.svelte';
 	import { currentMood } from './currentMood';
+	import { validateInput } from '../../../fn/validateInput';
 	const dispatch = createEventDispatcher();
 
-	$: activeMoodActual = $moodsArray.find((elm) => elm.id === $currentMood?.id);
 	let isEditingNote = false;
+	let isPickingMood = false;
+	const moodListItemConfig = { containerHeight: 559, containerWidth: 350 };
+	const moodListItemContentConfig = { containerHeight: 53, containerWidth: 350 };
+
+	function getCurrentMoodTitle() {
+		if ($currentMood === null) {
+			return '--';
+		} else {
+			return $moodsArray.find((elm) => elm.id === $currentMood.id)?.title;
+		}
+	}
+	$: currentMoodTitle = getCurrentMoodTitle($currentMood);
 	$: panelTop = isEditingNote ? 303 : 491;
 	const panelContainerConfig = { containerHeight: 329, containerWidth: 350 };
 </script>
@@ -62,15 +74,11 @@
 		horizontalCenter={true}
 		figmaImport={{ mobile: { top: '0', left: '50%', width: '100%', height: 144 } }}
 	/>
-	{#if activeMoodActual === undefined}
+	{#if $currentMood === null}
 		<Button
 			transitions={getTransition(1)}
 			onClick={() => {
-				localStorage.setItem(
-					'activeMood',
-					JSON.stringify({ id: 'MD-1', tx: Date.now(), eflag: false })
-				);
-				currentMood.set({ id: 'MD-1', tx: Date.now(), eflag: false });
+				isPickingMood = true;
 			}}
 			horizontalCenter={true}
 			figmaImportConfig={panelContainerConfig}
@@ -81,11 +89,17 @@
 		/>
 	{:else}
 		<Button
+			onClick={() => {
+				currentMood.update((cm) => {
+					cm.eflag = !cm.eflag;
+					return cm;
+				});
+			}}
 			transitions={getTransition(1)}
 			figmaImportConfig={panelContainerConfig}
 			figmaImport={{ mobile: { top: 5, left: 179, width: 70, height: 29 } }}
-			hoverOpacityMin={0}
-			hoverOpacityMax={20}><EflagDeco height="70%" /></Button
+			hoverOpacityMin={$currentMood.eflag ? 60 : 0}
+			hoverOpacityMax={$currentMood.eflag ? 60 : 10}><EflagDeco height="70%" /></Button
 		>
 		<Button
 			onClick={() => {
@@ -107,10 +121,10 @@
 		>
 		<Label
 			transitions={getTransition(1)}
-			text={activeMoodActual.title}
+			text={currentMoodTitle}
 			figmaImportConfig={panelContainerConfig}
 			figmaImport={{ mobile: { top: 11, left: 6 } }}
-			verticalFont="25px"
+			verticalFont="20px"
 		/>
 		<HorizontalLine
 			transitions={getTransition(2)}
@@ -123,13 +137,24 @@
 		<Label
 			backgroundColor="{$globalStyle.activeColor}10"
 			transitions={getTransition(3)}
-			text="Started at {getTimeFromUnix($currentMood?.tx)}"
+			text="Started at {getTimeFromUnix($currentMood?.startUnix)}"
 			figmaImportConfig={panelContainerConfig}
 			horizontalCenter={true}
 			figmaImport={{ mobile: { top: 57, left: '50%', width: 204, height: 22 } }}
 			verticalFont={$globalStyle.mediumMobileFont}
 		/>
 		<Button
+			onClick={() => {
+				if ($currentMood !== null) {
+					currentDay.update((cd) => {
+						cd.moodLogs.push({ ...$currentMood, endUnix: Date.now() });
+						return cd;
+					});
+					currentMood.set(null);
+					localStorage.removeItem('activeMood');
+					isEditingNote = false;
+				}
+			}}
 			horizontalCenter={true}
 			figmaImportConfig={panelContainerConfig}
 			transitions={getTransition(4)}
@@ -155,6 +180,12 @@
 			figmaImport={{ mobile: { top: 144, left: '50%', width: '100%', height: 185 } }}
 		/>
 		<Textarea
+			on:onValue={(e) => {
+				currentMood.update((cm) => {
+					cm.note = e.detail;
+					return cm;
+				});
+			}}
 			paddingLeft="2%"
 			paddingTop="2%"
 			verticalFont={$globalStyle.mediumMobileFont}
@@ -173,3 +204,57 @@
 		/>
 	{/if}
 </Box>
+{#if isPickingMood}
+	<Box width="100%" height="100%" backdropFilter="blur(50px)">
+		<List figmaImport={{ mobile: { top: 30, left: 5, width: 350, height: 550 } }}>
+			{#each $moodsArray as mood, ix}
+				<ListItem
+					marginBottom="4%"
+					style="min-height: 10%;"
+					transitions={getTransition(ix + 3)}
+					figmaImportConfig={moodListItemConfig}
+					figmaImport={{
+						mobile: {
+							top: 'auto',
+							left: '0',
+							width: '100%',
+							height: moodListItemContentConfig.containerHeight
+						}
+					}}
+				>
+					<Label
+						align="left"
+						verticalFont={$globalStyle.mediumMobileFont}
+						color={mood.color}
+						left="15%"
+						text={mood.title}
+					/>
+					<MoodLogDeco color={mood.color} left="1.3%" height="50%" />
+					<Button
+						onClick={() => {
+							currentMood.set({ id: mood.id, startUnix: Date.now(), eflag: false, note: null });
+							isPickingMood = false;
+						}}
+						width="100%"
+						height="100%"
+						borderColor={mood.color}
+						backgroundColor={mood.color}
+						hoverOpacityMin={5}
+						hoverOpacityMax={20}
+					/>
+				</ListItem>
+			{/each}
+		</List>
+	</Box>
+	<Button
+		onClick={() => {
+			isPickingMood = false;
+		}}
+		horizontalCenter={true}
+		transitions={getTransition(4)}
+		figmaImport={{ mobile: { top: 585, left: '50%', width: 350, height: 47 } }}
+		label="Back"
+		hoverOpacityMin={0}
+		hoverOpacityMax={20}
+	/>
+{/if}

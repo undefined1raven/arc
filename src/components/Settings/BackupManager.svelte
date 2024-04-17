@@ -89,7 +89,6 @@
 															priorityArrayActual.set(priorityArray);
 															projectsActual.set(projects);
 															statusArrayActual.set(statusArray);
-															console.log(statusArrayone);
 														}
 													}
 												});

@@ -8,7 +8,7 @@
 	import Ex7Deco from '../deco/EX7Deco.svelte';
 	import HeatmapDeco from '../deco/HeatmapDeco.svelte';
 	import { activeTessApp } from './activeTessApp';
-	import { currentDay, logs, selectedDayObj, statusArray } from './TessVault';
+	import { currentDay, logs, selectedDayObj, statusArray, moodsArray } from './TessVault';
 	import List from '../common/List.svelte';
 	import ListItem from '../common/ListItem.svelte';
 	import { activeApp } from '../../stores/activeApp';
@@ -19,17 +19,23 @@
 	import { HeatmapChart } from '@carbon/charts-svelte';
 	import { ex7heatmapOptions } from '../DataExplorer/explorerChartOptions';
 	import { datePadding } from '../../fn/datePadding';
-	import { tasks } from '../../stores/dayViewSelectedDay';
 	let t = 150;
 	let isShowingHeatmap = false;
 	onMount(() => {
+		moodsArray.set([
+			{ title: 'Stable High', color: '#00FF75', score: 70, id: 'MD-0' },
+			{ title: 'High Burst', color: '#0094FF', score: 10, id: 'MD-2' },
+			{ title: 'Low', color: '#CD5057', score: -50, id: 'MD-1' },
+			{ title: 'Bottom Low', color: '#7D0F15', score: -80, id: 'MD-4' },
+			{ title: 'ECOR', color: '#2515DE', score: -100, id: 'MD-3' },
+			{ title: 'Neutral', color: '#759A86', score: 0, id: 'MD-5' }
+		]);
 		setInterval(() => {
 			if (t > 2) {
 				t = -2;
 			}
 		}, 150);
 	});
-
 	function percentOfCompletedFunctionsToColors(percentage) {
 		if (percentage < 25) {
 			return $globalStyle.errorColor;
@@ -143,6 +149,7 @@
 				tasks: [],
 				exfArray: [],
 				active: true,
+				moodLogs: [],
 				L5s: {
 					L0: { x: 0, y: 0, color: '#959595' },
 					L1: { x: 0, y: 0, color: '#608DFF' },

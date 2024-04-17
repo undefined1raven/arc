@@ -19,6 +19,7 @@
 	import { touchMove, touchStart } from '../../../stores/touchGestures';
 	import screenSize from '../../../stores/screenSize';
 	import Textarea from '../../common/Textarea.svelte';
+	import NumericalInput from '../../common/NumericalInput.svelte';
 	import L5sDeco from '../../deco/L5sDeco.svelte';
 	import DropdownDeco from '../../deco/DropdownDeco.svelte';
 	import LAttributesEditorGrid from '../../deco/LAttributesEditorGrid.svelte';
@@ -39,6 +40,8 @@
 	import AddDeco from '../../deco/AddDeco.svelte';
 	import { selectedMoodToEdit } from './selectedMoodToEdit';
 	import ColorInput from '../../common/ColorInput.svelte';
+	import NumberPicker from '../../common/NumberPicker.svelte';
+	import { v4 } from 'uuid';
 	const dispatch = createEventDispatcher();
 	function onBack() {
 		dispatch('back');
@@ -54,10 +57,6 @@
 	}
 
 	$: updateCurrentMoodStore(localStorage.getItem('activeMood'));
-
-	function getMoodConfig(id) {
-		return $moodsArray.find((elm) => elm.id === id);
-	}
 </script>
 
 {#if isShowingMoodConfig === false}
@@ -80,6 +79,18 @@
 	>
 
 	<Button
+		onClick={() => {
+			const newMood = {
+				title: 'New Mood',
+				color: $globalStyle.activeColor,
+				score: 0,
+				id: `MD-${v4()}`
+			};
+			moodsArray.update((ma) => {
+				ma.push(newMood);
+				return ma;
+			});
+		}}
 		figmaImport={{ mobile: { top: 30, left: 260, width: 95, height: 36 } }}
 		transitions={getTransition(1)}><AddDeco height="50%" /></Button
 	>
@@ -111,6 +122,7 @@
 				<Button
 					onClick={() => {
 						isShowingMoodConfig = true;
+						selectedMoodToEdit.set(mood);
 					}}
 					width="100%"
 					height="100%"
@@ -124,7 +136,7 @@
 	</List>
 {:else}
 	<Label
-		figmaImport={{ mobile: { top: 30, left: 55, width: 194, height: 36 } }}
+		figmaImport={{ mobile: { top: 30, left: 55, width: 300, height: 36 } }}
 		align="left"
 		alignPadding="4%"
 		text="Mood Config"
@@ -143,7 +155,7 @@
 		borderColor="{$globalStyle.activeColor}00"><DropdownDeco height="70%" /></Button
 	>
 
-	<Button
+	<!-- <Button
 		color={$globalStyle.errorColor}
 		borderColor={$globalStyle.errorColor}
 		backgroundColor={$globalStyle.errorColor}
@@ -153,7 +165,7 @@
 		verticalFont={$globalStyle.mediumMobileFont}
 		figmaImport={{ mobile: { top: 30, left: 260, width: 95, height: 36 } }}
 		transitions={getTransition(1)}
-	/>
+	/> -->
 
 	<Label
 		transitions={getTransition(2)}
@@ -167,6 +179,19 @@
 		style="border: none; border-left: solid 1px {$globalStyle.activeColor}; border-top-left-radius: 0; border-bottom-left-radius: 0;"
 	/>
 	<Input
+		on:onValue={(e) => {
+			moodsArray.update((ma) => {
+				const moodIndex = $moodsArray.indexOf($selectedMoodToEdit);
+				if (moodIndex > 0) {
+					selectedMoodToEdit.update((smte) => {
+						smte.title = e.detail;
+						return smte;
+					});
+					ma[moodIndex] = $selectedMoodToEdit;
+				}
+				return ma;
+			});
+		}}
 		transitions={getTransition(2)}
 		paddingLeft="2%"
 		figmaImport={{ mobile: { top: 78, left: 107, width: 248, height: 36 } }}
@@ -184,7 +209,61 @@
 		style="border: none; border-left: solid 1px {$globalStyle.activeColor}; border-top-left-radius: 0; border-bottom-left-radius: 0;"
 	/>
 	<ColorInput
+		on:onValue={(e) => {
+			moodsArray.update((ma) => {
+				const moodIndex = $moodsArray.indexOf($selectedMoodToEdit);
+				if (moodIndex > 0) {
+					selectedMoodToEdit.update((smte) => {
+						smte.color = e.detail;
+						return smte;
+					});
+					ma[moodIndex] = $selectedMoodToEdit;
+				}
+				return ma;
+			});
+		}}
+		defaultValue={$selectedMoodToEdit.color}
 		style="border-radius: {$globalStyle.borderRadius};"
 		figmaImport={{ mobile: { top: 126, left: 107, width: 248, height: 36 } }}
+	/>
+	<Label
+		transitions={getTransition(4)}
+		figmaImport={{ mobile: { top: 174, left: 5, width: 95, height: 36 } }}
+		text="Score"
+		borderRadius={$globalStyle.borderRadius}
+		align="left"
+		alignPadding="2%"
+		verticalFont={$globalStyle.mediumMobileFont}
+		backgroundColor="{$globalStyle.activeColor}20"
+		style="border: none; border-left: solid 1px {$globalStyle.activeColor}; border-top-left-radius: 0; border-bottom-left-radius: 0;"
+	/>
+	<NumericalInput
+		on:onValue={(e) => {
+			moodsArray.update((ma) => {
+				const moodIndex = $moodsArray.indexOf($selectedMoodToEdit);
+				if (moodIndex > 0) {
+					selectedMoodToEdit.update((smte) => {
+						const input = e.detail;
+						if (isNaN(parseInt(input)) === false) {
+							if (input < -100) {
+								smte.score = -100;
+								return smte;
+							}
+							if (input > 100) {
+								smte.score = 100;
+								return smte;
+							}
+							smte.score = input;
+						}
+						return smte;
+					});
+					ma[moodIndex] = $selectedMoodToEdit;
+				}
+				return ma;
+			});
+		}}
+		defaultValue={$selectedMoodToEdit.score}
+		style="border-radius: {$globalStyle.borderRadius};"
+		figmaImport={{ mobile: { top: 174, left: 107, width: 248, height: 36 } }}
 	/>
 {/if}
