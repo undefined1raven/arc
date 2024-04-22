@@ -22,14 +22,6 @@
 	let t = 150;
 	let isShowingHeatmap = false;
 	onMount(() => {
-		moodsArray.set([
-			{ title: 'Stable High', color: '#00FF75', score: 70, id: 'MD-0' },
-			{ title: 'High Burst', color: '#0094FF', score: 10, id: 'MD-2' },
-			{ title: 'Low', color: '#CD5057', score: -50, id: 'MD-1' },
-			{ title: 'Bottom Low', color: '#7D0F15', score: -80, id: 'MD-4' },
-			{ title: 'ECOR', color: '#2515DE', score: -100, id: 'MD-3' },
-			{ title: 'Neutral', color: '#759A86', score: 0, id: 'MD-5' }
-		]);
 		setInterval(() => {
 			if (t > 2) {
 				t = -2;
