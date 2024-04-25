@@ -21,13 +21,16 @@
 		logs as logsActual,
 		priorityArray as priorityArrayActual,
 		projects as projectsActual,
-		statusArray as statusArrayActual
+		moodsArray as moodArrayActual,
+		statusArray as statusArrayActual,
+		projects
 	} from '../Tess/TessVault';
 	import { statusArray } from '../../components/Tess/TessVault';
 	import { validateInput } from '../../fn/validateInput';
 	import { processEncryptedSID } from '../SID/fn/processEncryptedSID';
 	import { SIDs, SIDsImported } from '../SID/SIDVault';
 	import symmetricDecrypt from '../../fn/crypto/symmetricDecrypt';
+	import { getTessUplinkDoc } from '../../fn/TessUplinkDocPrep';
 	const dispatch = createEventDispatcher();
 
 	let fileInput;
@@ -69,33 +72,44 @@
 													key
 												).then((decryptedTessObj) => {
 													if (decryptedTessObj.status === true) {
-														if (
-															validateInput(
-																['logs', 'currentDay', 'exfArray', 'statusArray'],
-																decryptedTessObj.results
-															) === true
-														) {
-															const {
-																currentDay,
-																exfArray,
-																logs,
-																priorityArray,
-																projects,
-																statusArray
-															} = decryptedTessObj.results;
-															logsActual.set(logs);
-															currentDayActual.set(currentDay);
-															exfArrayActual.set(exfArray);
-															priorityArrayActual.set(priorityArray);
-															projectsActual.set(projects);
-															statusArrayActual.set(statusArray);
-														}
+														const {
+															statusArray,
+															moodArray,
+															priorityArray,
+															exfArray,
+															projects,
+															currentDay,
+															logs
+														} = decryptedTessObj.results;
+														statusArrayActual.set(statusArray);
+														moodArrayActual.set(moodArray);
+														priorityArrayActual.set(priorityArray);
+														exfArrayActual.set(exfArray);
+														projectsActual.set(projects);
+														currentDayActual.set(currentDay);
+														logsActual.set(logs);
+														setTimeout(async () => {
+															if ($tessPIN.pin !== 'none') {
+																await getTessUplinkDoc(
+																	$logsActual,
+																	$currentDayActual,
+																	$exfArrayActual,
+																	$statusArrayActual,
+																	$priorityArrayActual,
+																	$projectsActual,
+																	$moodArrayActual,
+																	$tessPIN.pin,
+																	true
+																);
+															}
+														}, 50);
 													}
 												});
 											}
 										})
 										.catch((e) => {
-											console.log('Failed to unwrap tess simkey');3
+											console.log('Failed to unwrap tess simkey');
+											3;
 										});
 									// console.log(parsedBackup);
 								} catch (e) {

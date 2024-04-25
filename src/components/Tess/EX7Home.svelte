@@ -20,6 +20,8 @@
 	import { ex7heatmapOptions } from '../DataExplorer/explorerChartOptions';
 	import { datePadding } from '../../fn/datePadding';
 	let t = 150;
+
+
 	let isShowingHeatmap = false;
 	onMount(() => {
 		setInterval(() => {
