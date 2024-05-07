@@ -218,7 +218,7 @@
 {#if currentViewMode === 'mood'}
 	{#if isViewingMoodLogNote === false}
 		<List figmaImport={{ mobile: { top: 120, left: 5, width: 350, height: 455 } }}>
-			{#if $selectedDayObj.moodLogs.length === 0}
+			{#if $selectedDayObj.moodLogs === undefined || $selectedDayObj.moodLogs?.length === 0}
 				<Label
 					transitions={getTransition(1)}
 					verticalFont={$globalStyle.mediumMobileFont}
