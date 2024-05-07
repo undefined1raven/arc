@@ -9,7 +9,7 @@
 	import { getTransition } from '../../fn/getTransisitions';
 	import ListItem from '../common/ListItem.svelte';
 	import List from '../common/List.svelte';
-	import { currentDay, exfArray, logs, selectedDayObj, statusArray } from './TessVault';
+	import { currentDay, exfArray, logs, moodsArray, selectedDayObj, statusArray } from './TessVault';
 	import { tasks } from '../../stores/dayViewSelectedDay';
 	import Input from '../common/Input.svelte';
 	import { v4 } from 'uuid';
@@ -18,6 +18,20 @@
 	import Textarea from '../common/Textarea.svelte';
 	import L5sDeco from '../deco/L5sDeco.svelte';
 	import LAttributesEditor from './LAttributesEditor.svelte';
+	import MoodLogDeco from '../deco/MoodLogDeco.svelte';
+	import MoodLoggerDeco from '../deco/MoodLoggerDeco.svelte';
+	import { getTimeFromUnix } from '../../fn/getTimeFromUnix';
+	import EflagDeco from '../deco/EflagDeco.svelte';
+	const dayHistoryListItemConfig = { containerHeight: 367, containerWidth: 350 };
+	const dayHistoryListItemContentConfig = { containerHeight: 70, containerWidth: 350 };
+
+	function getDisplayTimeRangeLabel(moodLog) {
+		const startTimeUnix = moodLog.startUnix;
+		const endTimeUnix = moodLog.endUnix;
+		const displayStartTime = getTimeFromUnix(startTimeUnix);
+		const displayEndTime = getTimeFromUnix(endTimeUnix);
+		return `${displayStartTime} >>> ${displayEndTime}`;
+	}
 
 	let currentDate = new Date($selectedDayObj.tx);
 	let displayDate =
@@ -34,8 +48,14 @@
 	function getEXFObjFromID(exfID) {
 		return $exfArray.find((elm) => elm.EXFID === exfID);
 	}
-	let currentViewMode = 'tasks'; // tasks || exfs
 
+	function getMoodConfig(moodID) {
+		return $moodsArray.find((elm) => elm.id === moodID);
+	}
+
+	let currentViewMode = 'tasks'; // tasks || exfs || mood
+	let selectedMoodLogNote = '';
+	let isViewingMoodLogNote = false;
 	onMount(() => {
 		if ($selectedDayObj.ini === false) {
 			window.location.hash = 'home';
@@ -110,18 +130,18 @@
 
 <Button
 	onClick={() => {
-		currentViewMode = 'L5s';
+		currentViewMode = 'mood';
 	}}
-	hoverOpacityMin={currentViewMode === 'L5s' ? 20 : 0}
+	hoverOpacityMin={currentViewMode === 'mood' ? 20 : 0}
 	label=""
-	color={currentViewMode === 'L5s' ? $globalStyle.activeMono : $globalStyle.secondaryMono}
-	borderColor={currentViewMode === 'L5s' ? $globalStyle.activeColor : $globalStyle.secondaryColor}
-	backgroundColor={currentViewMode === 'L5s'
+	color={currentViewMode === 'mood' ? $globalStyle.activeMono : $globalStyle.secondaryMono}
+	borderColor={currentViewMode === 'mood' ? $globalStyle.activeColor : $globalStyle.secondaryColor}
+	backgroundColor={currentViewMode === 'mood'
 		? $globalStyle.activeColor
 		: $globalStyle.secondaryColor}
 	transitions={getTransition(2)}
 	figmaImport={{ mobile: { top: 75, left: 125, width: 110, height: 36 } }}
-	><L5sDeco width="60%" height="50%" color={$globalStyle.activeColor} /></Button
+	><MoodLoggerDeco width="60%" height="60%" color={$globalStyle.activeColor} /></Button
 >
 {#if currentViewMode === 'tasks'}
 	<Box
@@ -195,20 +215,108 @@
 	</Box>
 {/if}
 
-{#if currentViewMode === 'L5s'}
-	{#if $selectedDayObj.L5s !== undefined}
-		<LAttributesEditor readOnly={true} positions={$selectedDayObj.L5s} />
+{#if currentViewMode === 'mood'}
+	{#if isViewingMoodLogNote === false}
+		<List figmaImport={{ mobile: { top: 120, left: 5, width: 350, height: 455 } }}>
+			{#if $selectedDayObj.moodLogs.length === 0}
+				<Label
+					transitions={getTransition(1)}
+					verticalFont={$globalStyle.mediumMobileFont}
+					text="No history to display"
+					backgroundColor="{$globalStyle.activeColor}20"
+					width="70%"
+					height="8%"
+				/>
+			{/if}
+
+			{#each $selectedDayObj.moodLogs as moodLog, ix}
+				<ListItem
+					marginBottom="4%"
+					style="min-height: 15%;"
+					transitions={getTransition(ix + 3)}
+					figmaImportConfig={dayHistoryListItemConfig}
+					figmaImport={{
+						mobile: {
+							top: 'auto',
+							left: '0',
+							width: '100%',
+							height: dayHistoryListItemContentConfig.containerHeight
+						}
+					}}
+				>
+					<Label
+						text={getMoodConfig(moodLog.id)?.title}
+						color={getMoodConfig(moodLog.id)?.color}
+						align="left"
+						figmaImportConfig={dayHistoryListItemContentConfig}
+						figmaImport={{ mobile: { top: 13, left: 55, width: 211, height: 'auto' } }}
+					/>
+					<Label
+						align="left"
+						verticalFont={$globalStyle.mediumMobileFont}
+						text={getDisplayTimeRangeLabel(moodLog)}
+						color={getMoodConfig(moodLog.id)?.color}
+						figmaImportConfig={dayHistoryListItemContentConfig}
+						figmaImport={{ mobile: { top: 43, left: 55, width: 211, height: 'auto' } }}
+					/>
+					<MoodLogDeco color={getMoodConfig(moodLog.id)?.color} left="1.3%" height="50%" />
+					<Button
+						onClick={() => {
+							if (moodLog.note !== null) {
+								selectedMoodLogNote = moodLog.note;
+								isViewingMoodLogNote = true;
+							}
+						}}
+						width="100%"
+						height="100%"
+						borderColor={getMoodConfig(moodLog.id)?.color}
+						backgroundColor={getMoodConfig(moodLog.id)?.color}
+						hoverOpacityMin={5}
+						hoverOpacityMax={20}
+					/>
+					<Label
+						verticalFont={$globalStyle.smallMobileFont}
+						text={moodLog.note === null ? 'N/A' : 'Note'}
+						color={moodLog.note === null
+							? $globalStyle.inactiveColor
+							: getMoodConfig(moodLog?.id)?.color}
+						borderColor={moodLog.note === null
+							? $globalStyle.inactiveColor
+							: getMoodConfig(moodLog?.id).color}
+						figmaImportConfig={dayHistoryListItemContentConfig}
+						verticalCenter={true}
+						figmaImport={{ mobile: { top: '50%', left: 287, width: 56, height: 18 } }}
+					/>
+					{#if moodLog.eflag}
+						<EflagDeco style="right: 17%;" height="22%" color={getMoodConfig(moodLog?.id)?.color} />
+					{/if}
+				</ListItem>
+			{/each}
+		</List>
 	{:else}
-		<Label
-			horizontalCenter={true}
-			left="50%"
-			backgroundColor="{$globalStyle.activeColor}20"
-			borderRadius={$globalStyle.borderRadius}
-			text="No L5s to view"
-			top="20%"
-			width="80%"
-			height="7%"
-		/>
+		<Box
+			figmaImport={{ mobile: { top: 120, left: 5, width: 350, height: 455 } }}
+			backgroundColor="#00000055"
+			backdropFilter="blur(20px)"
+		>
+			<Label
+				transitions={getTransition(1)}
+				text="Mood Note"
+				left="0%"
+				verticalFont={$globalStyle.mediumMobileFont}
+				top="2%"
+			/>
+			<HorizontalLine top="6.4%" width="100%" color={$globalStyle.activeColor} />
+			<Label
+				transitions={getTransition(2)}
+				text={selectedMoodLogNote}
+				left="0%"
+				align="left"
+				width="96%"
+				verticalFont={$globalStyle.mediumMobileFont}
+				top="9%"
+			/>
+		</Box>
 	{/if}
 {/if}
 
@@ -284,7 +392,11 @@
 	verticalFont={$globalStyle.mediumMobileFont}
 	label="Back"
 	onClick={() => {
-		window.location.hash = '#home';
+		if (isViewingMoodLogNote) {
+			isViewingMoodLogNote = false;
+		} else {
+			window.location.hash = '#home';
+		}
 	}}
 	figmaImport={{ mobile: { top: 574, width: restorable ? 170 : 350, left: 5, height: 44 } }}
 />
