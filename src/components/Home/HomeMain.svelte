@@ -132,88 +132,88 @@
 			}
 		});
 
-		setInterval(() => {
-			if (Date.now() - $days[$days.length - 1].dayEndUnix >= 86400000) {
-				let lowerBoundUnix =
-					new Date($days[$days.length - 1].dayEndUnix).setHours(23, 59, 59, 59) + 1000;
-				let upperBoundUnix = lowerBoundUnix + 86400000;
+		// setInterval(() => {
+		// 	if (Date.now() - $days[$days.length - 1].dayEndUnix >= 86400000) {
+		// 		let lowerBoundUnix =
+		// 			new Date($days[$days.length - 1].dayEndUnix).setHours(23, 59, 59, 59) + 1000;
+		// 		let upperBoundUnix = lowerBoundUnix + 86400000;
 
-				const prevDaysTasks = [];
-				for (let ix = $tasksLog.length - 1; ix >= 0; ix--) {
-					const task = $tasksLog[ix];
-					if (task.taskStartUnix > lowerBoundUnix && task.taskStartUnix < upperBoundUnix) {
-						prevDaysTasks.push(task);
-					} else {
-						break;
-					}
-				}
+		// 		const prevDaysTasks = [];
+		// 		for (let ix = $tasksLog.length - 1; ix >= 0; ix--) {
+		// 			const task = $tasksLog[ix];
+		// 			if (task.taskStartUnix > lowerBoundUnix && task.taskStartUnix < upperBoundUnix) {
+		// 				prevDaysTasks.push(task);
+		// 			} else {
+		// 				break;
+		// 			}
+		// 		}
 
-				let dayObj = {};
-				//get day coverage
-				let trackedTime = 0;
-				for (let ix = 0; ix < prevDaysTasks.length; ix++) {
-					const task = prevDaysTasks[ix];
-					trackedTime += task.taskEndUnix - task.taskStartUnix;
-				}
-				let dayCoverage = ((trackedTime / 86400000) * 100).toFixed(0) + '%';
+		// 		let dayObj = {};
+		// 		//get day coverage
+		// 		let trackedTime = 0;
+		// 		for (let ix = 0; ix < prevDaysTasks.length; ix++) {
+		// 			const task = prevDaysTasks[ix];
+		// 			trackedTime += task.taskEndUnix - task.taskStartUnix;
+		// 		}
+		// 		let dayCoverage = ((trackedTime / 86400000) * 100).toFixed(0) + '%';
 
-				dayObj['coverage'] = dayCoverage;
-				dayObj['dayStartUnix'] = lowerBoundUnix;
-				dayObj['dayEndUnix'] = upperBoundUnix - 100;
+		// 		dayObj['coverage'] = dayCoverage;
+		// 		dayObj['dayStartUnix'] = lowerBoundUnix;
+		// 		dayObj['dayEndUnix'] = upperBoundUnix - 100;
 
-				//get day state [just routine based so far]
-				const routineTasks = $tasks.filter((task) => task.isRoutine);
-				if (routineTasks.length === 0) {
-					dayObj['routine'] = true;
-					dayObj['status'] = 'success';
-				} else {
-					let routineTasksCompleted = 0;
-					for (let ix = 0; ix < routineTasks.length; ix++) {
-						const task = routineTasks[ix];
-						const taskLog = prevDaysTasks.filter((prevTask) => prevTask.taskID === task.id)[0];
-						if (taskLog && task) {
-							let scheduledStartUnix = new Date(lowerBoundUnix).setHours(
-								task.expectedStart[0],
-								task.expectedStart[1],
-								task.expectedStart[3],
-								task.expectedStart[4]
-							);
-							let scheduledEndUnix = new Date(lowerBoundUnix).setHours(
-								task.expectedEnd[0],
-								task.expectedEnd[1],
-								task.expectedEnd[3],
-								task.expectedEnd[4]
-							);
-							let startedOnTime = false;
-							let endedOnTime = false;
-							let acceptableOffset = 1000 * 60 * 20;
-							if (Math.abs(scheduledStartUnix - taskLog.taskStartUnix) < acceptableOffset) {
-								startedOnTime = true;
-							}
-							if (Math.abs(scheduledEndUnix - taskLog.taskEndUnix) < acceptableOffset) {
-								endedOnTime = true;
-							}
-							if (startedOnTime && endedOnTime) {
-								routineTasksCompleted++;
-							}
-						}
-					}
-					if (routineTasksCompleted === routineTasks.length) {
-						dayObj['routine'] = true;
-						dayObj['status'] = 'success';
-					} else {
-						dayObj['routine'] = false;
-						dayObj['status'] = 'fail';
-					}
-				}
-				if ($days.findIndex((elm) => elm.dayStartUnix === lowerBoundUnix) === -1) {
-					days.update((days) => {
-						days.push(dayObj);
-						return days;
-					});
-				}
-			}
-		}, 30000);
+		// 		//get day state [just routine based so far]
+		// 		const routineTasks = $tasks.filter((task) => task.isRoutine);
+		// 		if (routineTasks.length === 0) {
+		// 			dayObj['routine'] = true;
+		// 			dayObj['status'] = 'success';
+		// 		} else {
+		// 			let routineTasksCompleted = 0;
+		// 			for (let ix = 0; ix < routineTasks.length; ix++) {
+		// 				const task = routineTasks[ix];
+		// 				const taskLog = prevDaysTasks.filter((prevTask) => prevTask.taskID === task.id)[0];
+		// 				if (taskLog && task) {
+		// 					let scheduledStartUnix = new Date(lowerBoundUnix).setHours(
+		// 						task.expectedStart[0],
+		// 						task.expectedStart[1],
+		// 						task.expectedStart[3],
+		// 						task.expectedStart[4]
+		// 					);
+		// 					let scheduledEndUnix = new Date(lowerBoundUnix).setHours(
+		// 						task.expectedEnd[0],
+		// 						task.expectedEnd[1],
+		// 						task.expectedEnd[3],
+		// 						task.expectedEnd[4]
+		// 					);
+		// 					let startedOnTime = false;
+		// 					let endedOnTime = false;
+		// 					let acceptableOffset = 1000 * 60 * 20;
+		// 					if (Math.abs(scheduledStartUnix - taskLog.taskStartUnix) < acceptableOffset) {
+		// 						startedOnTime = true;
+		// 					}
+		// 					if (Math.abs(scheduledEndUnix - taskLog.taskEndUnix) < acceptableOffset) {
+		// 						endedOnTime = true;
+		// 					}
+		// 					if (startedOnTime && endedOnTime) {
+		// 						routineTasksCompleted++;
+		// 					}
+		// 				}
+		// 			}
+		// 			if (routineTasksCompleted === routineTasks.length) {
+		// 				dayObj['routine'] = true;
+		// 				dayObj['status'] = 'success';
+		// 			} else {
+		// 				dayObj['routine'] = false;
+		// 				dayObj['status'] = 'fail';
+		// 			}
+		// 		}
+		// 		if ($days.findIndex((elm) => elm.dayStartUnix === lowerBoundUnix) === -1) {
+		// 			days.update((days) => {
+		// 				days.push(dayObj);
+		// 				return days;
+		// 			});
+		// 		}
+		// 	}
+		// }, 30000);
 
 		imported.set(true);
 		allowUpdates.set(allowUpdatesValue);
